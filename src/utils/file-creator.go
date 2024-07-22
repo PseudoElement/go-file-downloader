@@ -1,4 +1,4 @@
-package utils
+package custom_utils
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 )
 
 func CreateTempFile(fileName string, extension string, content string) (*os.File, error) {
+	createTempDirectoryIfNotExists()
 	pathDir, _ := os.Getwd()
 	tempDir := fmt.Sprintf("%s/src/temp", pathDir)
 	fullName := fmt.Sprintf("%s-*.%s", fileName, extension)
@@ -23,12 +24,11 @@ func CreateTempFile(fileName string, extension string, content string) (*os.File
 		return nil, err
 	}
 
-	// time.Sleep(time.Second)
-
 	return file, nil
 }
 
 func CreateFile(fileName string, extension string, content string) (*os.File, error) {
+	createTempDirectoryIfNotExists()
 	pathDir, _ := os.Getwd()
 	fullName := fmt.Sprintf("%s/src/temp/%s.%s", pathDir, fileName, extension)
 	file, e := os.Create(fullName)
@@ -44,4 +44,33 @@ func CreateFile(fileName string, extension string, content string) (*os.File, er
 
 	log.Println("bytes written ===> ", n)
 	return file, nil
+}
+
+func CreateNewFileWithManyWords(wordsCount int) (*os.File, error) {
+	var content string
+	for i := range wordsCount {
+		content += CreateRandomWord(15, false)
+		if i < wordsCount-1 {
+			content += "\n"
+		} else {
+			content += "."
+		}
+	}
+	f, err := CreateTempFile("temp-pdf-file", "pdf", content)
+
+	return f, err
+}
+
+func createTempDirectoryIfNotExists() error {
+	pathDir, _ := os.Getwd()
+	tempDir := fmt.Sprintf("%s/src/temp", pathDir)
+	_, err := os.Stat(tempDir)
+
+	if os.IsNotExist(err) {
+		if err = os.Mkdir(tempDir, os.ModePerm); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

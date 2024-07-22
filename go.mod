@@ -1,6 +1,6 @@
 module github.com/pseudoelement/go-file-downloader
 
-go 1.22.3
+go 1.22.1
 
 require (
 	github.com/gorilla/handlers v1.5.2

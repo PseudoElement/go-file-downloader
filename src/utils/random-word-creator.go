@@ -1,4 +1,4 @@
-package utils
+package custom_utils
 
 import (
 	"math"
