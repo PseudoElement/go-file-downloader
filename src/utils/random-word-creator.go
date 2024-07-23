@@ -11,10 +11,11 @@ const (
 	possibleVowels = "aeiou"
 )
 
-func CreateRandomWord(length int, startUpperCase bool) string {
+func CreateRandomWord(minLength int, maxLength int, startUpperCase bool) string {
 	word := ""
+	randomLength := CreateRandomNumber(minLength, maxLength)
 
-	for ind := range length {
+	for ind := range randomLength {
 		isVowel := rand.Intn(100) > 50
 
 		var letters string

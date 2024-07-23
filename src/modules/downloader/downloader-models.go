@@ -1,13 +1,29 @@
 package downloader_module
 
-type DownloadReqBody struct {
-	ColumnsData     []ColumnInfo `json:"columns_data"`
-	RowsCount       int          `json:"rows_count"`
-	DocType         string       `json:"doc_type"`
-	NeedCreateTable bool         `json:"need_create_table"`
+type DownloadTextReqBody struct {
+	ColumnsData []TextColumnInfo `json:"columns_data"`
+	RowsCount   int              `json:"rows_count"`
+	DocType     string           `json:"doc_type"`
+	DocName     string           `json:"doc_name"`
 }
 
-type ColumnInfo struct {
+type DownloadSqlReqBody struct {
+	ColumnsData     []SqlColumnInfo `json:"columns_data"`
+	RowsCount       int             `json:"rows_count"`
+	DocType         string          `json:"doc_type"`
+	NeedCreateTable bool            `json:"need_create_table"`
+}
+
+type TextColumnInfo struct {
+	Name string `json:"name"`
+	/* 'bool' or 'number' or 'string' */
+	Type              string `json:"type"`
+	NullValuesPercent int    `json:"null_values_percent"`
+	Min               int    `json:"min"`
+	Max               int    `json:"max"`
+}
+
+type SqlColumnInfo struct {
 	Name              string `json:"name"`
 	Type              string `json:"type"`
 	NullValuesPercent int    `json:"null_values_percent"`

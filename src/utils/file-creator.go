@@ -49,7 +49,7 @@ func CreateFile(fileName string, extension string, content string) (*os.File, er
 func CreateNewFileWithManyWords(wordsCount int) (*os.File, error) {
 	var content string
 	for i := range wordsCount {
-		content += CreateRandomWord(15, false)
+		content += CreateRandomWord(15, 15, false)
 		if i < wordsCount-1 {
 			content += "\n"
 		} else {
