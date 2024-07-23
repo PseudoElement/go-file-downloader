@@ -6,7 +6,7 @@ type DownloaderModule struct {
 	api *mux.Router
 }
 
-func NewDownloaderModule(api *mux.Router) *DownloaderModule {
+func NewModule(api *mux.Router) *DownloaderModule {
 	return &DownloaderModule{
 		api: api,
 	}

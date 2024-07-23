@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	downloader_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader"
 	healthcheck_module "github.com/pseudoelement/go-file-downloader/src/modules/healthcheck"
 )
 
@@ -15,8 +16,10 @@ func main() {
 	api := r.PathPrefix("/api/v1").Subrouter()
 
 	healthModule := healthcheck_module.NewModule(api)
+	downloaderModule := downloader_module.NewModule(api)
 
 	healthModule.SetRoutes()
+	downloaderModule.SetRoutes()
 
 	methods := handlers.AllowedMethods([]string{"POST", "GET", "PUT", "DELETE"})
 	ttl := handlers.MaxAge(3600)

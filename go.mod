@@ -7,4 +7,9 @@ require (
 	github.com/gorilla/mux v1.8.1
 )
 
-require github.com/felixge/httpsnoop v1.0.3 // indirect
+require (
+	github.com/felixge/httpsnoop v1.0.3 // indirect
+	github.com/pseudoelement/golang-utils v0.0.0-20240722224302-46eb8b23d25c // indirect
+)
+
+replace github.com/pseudoelement/golang-utils => ../golang-utils

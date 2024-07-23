@@ -3,7 +3,7 @@ package downloader_module
 import (
 	"net/http"
 
-	api_module "github.com/pseudoelement/go-file-downloader/src/common/api"
+	api_module "github.com/pseudoelement/golang-utils/src/api"
 )
 
 func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req *http.Request) {
