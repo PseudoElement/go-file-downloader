@@ -16,8 +16,10 @@ func CreateTempFile(fileName string, extension string, content string) (*os.File
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
 	defer os.Remove(file.Name())
+	defer file.Close()
+
+	fmt.Println(file.Name())
 
 	_, err = file.WriteString(content)
 	if err != nil {

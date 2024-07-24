@@ -1,22 +1,25 @@
-package downloader_module
+package types_module
+
+type CommonReqBody struct {
+	RowsCount int    `json:"rows_count"`
+	DocType   string `json:"doc_type"`
+	DocName   string `json:"doc_name"`
+}
 
 type DownloadTextReqBody struct {
+	CommonReqBody
 	ColumnsData []TextColumnInfo `json:"columns_data"`
-	RowsCount   int              `json:"rows_count"`
-	DocType     string           `json:"doc_type"`
-	DocName     string           `json:"doc_name"`
 }
 
 type DownloadSqlReqBody struct {
+	CommonReqBody
 	ColumnsData     []SqlColumnInfo `json:"columns_data"`
-	RowsCount       int             `json:"rows_count"`
-	DocType         string          `json:"doc_type"`
 	NeedCreateTable bool            `json:"need_create_table"`
 }
 
 type TextColumnInfo struct {
 	Name string `json:"name"`
-	/* 'bool' or 'number' or 'string' */
+	/* 'BOOL' or 'NUMBER' or 'STRING' */
 	Type              string `json:"type"`
 	NullValuesPercent int    `json:"null_values_percent"`
 	Min               int    `json:"min"`

@@ -1,7 +1,7 @@
 package custom_utils
 
 func Map[T any, R any](slice []T, fn func(el T, index int) R) []R {
-	sl := make([]R, len(slice))
+	sl := []R{}
 
 	for i, el := range slice {
 		value := fn(el, i)

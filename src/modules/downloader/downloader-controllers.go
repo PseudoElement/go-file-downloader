@@ -2,13 +2,23 @@ package downloader_module
 
 import (
 	"net/http"
+
+	types_module "github.com/pseudoelement/go-file-downloader/src/types"
+	api_module "github.com/pseudoelement/golang-utils/src/api"
 )
 
 func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req *http.Request) {
-	// body, err := api_module.ParseReqBody[DownloadTextReqBody](w, req)
-	// if err != nil {
-	// 	api_module.FailResponse(w, err.Error(), 400)
-	// }
+	body, err := api_module.ParseReqBody[types_module.DownloadTextReqBody](w, req)
+	if err != nil {
+		api_module.FailResponse(w, err.Error(), err.Status())
+		return
+	}
 
-	// body.
+	file, e := m.downloaderSrv.CreateTxtFileWithContentSync(body)
+	if e != nil {
+		api_module.FailResponse(w, e.Error(), 400)
+	}
+
+	w.WriteHeader(http.StatusOK)
+	http.ServeFile(w, req, file.Name())
 }
