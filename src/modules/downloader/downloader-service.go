@@ -28,6 +28,7 @@ func (srv *DownloaderService) CreateTxtFileWithContentSync(body interface{}) (*o
 	var err error
 	switch body.(type) {
 	case types_module.DownloadSqlReqBody:
+		// sqlBody := body.(types_module.DownloadSqlReqBody)
 		return nil, fmt.Errorf("Method not implemented!")
 	case types_module.DownloadTextReqBody:
 		textBody, _ := body.(types_module.DownloadTextReqBody)

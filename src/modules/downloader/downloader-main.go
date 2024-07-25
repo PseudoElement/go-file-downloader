@@ -33,10 +33,8 @@ func (m *DownloaderModule) MockCreateFile() (*os.File, error) {
 		ColumnsData: []types_module.TextColumnInfo{
 			types_module.TextColumnInfo{
 				Name:              "Id",
-				Type:              "NUMBER",
+				Type:              "AUTO_INCREMENT",
 				NullValuesPercent: 0,
-				Min:               0,
-				Max:               1000,
 			},
 			types_module.TextColumnInfo{
 				Name:              "Name",
@@ -66,9 +64,9 @@ func (m *DownloaderModule) MockCreateFile() (*os.File, error) {
 			types_module.TextColumnInfo{
 				Name:              "Child",
 				Type:              "STRING",
-				NullValuesPercent: 0,
+				NullValuesPercent: 90,
 				Min:               20,
-				Max:               40,
+				Max:               30,
 			},
 			types_module.TextColumnInfo{
 				Name:              "WorkTitle",

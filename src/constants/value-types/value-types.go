@@ -1,9 +1,10 @@
 package value_types
 
 const (
-	BOOL   = "BOOL"
-	NUMBER = "NUMBER"
-	STRING = "STRING"
+	BOOL           = "BOOL"
+	NUMBER         = "NUMBER"
+	STRING         = "STRING"
+	AUTO_INCREMENT = "AUTO_INCREMENT"
 )
 
 const (

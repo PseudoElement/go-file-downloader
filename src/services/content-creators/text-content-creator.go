@@ -2,6 +2,7 @@ package content_creators
 
 import (
 	"fmt"
+	"math/rand"
 	"slices"
 	"strconv"
 	"strings"
@@ -47,6 +48,7 @@ func (srv *TextContentCreator) concatAllCellsInTable(columnsWithFullCells [][]st
 func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadTextReqBody) [][]string {
 	columnsWithValuesInCells := custom_utils.Map(body.ColumnsData, func(columnData types_module.TextColumnInfo, ind int) []string {
 		cellsOfColumn := []string{}
+		incrementFn := custom_utils.AutoIncrement(1)
 		for j := range body.RowsCount {
 			if j == 0 {
 				cellsOfColumn = append(cellsOfColumn, columnData.Name)
@@ -60,9 +62,16 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 				value = strconv.Itoa(custom_utils.CreateRandomNumber(columnData.Min, columnData.Max))
 			case value_types.STRING:
 				value = custom_utils.CreateRandomWord(columnData.Min, columnData.Max, false)
+			case value_types.AUTO_INCREMENT:
+				value = strconv.Itoa(incrementFn())
 			default:
 				value = "empty"
 			}
+
+			if isNullValue := columnData.NullValuesPercent > rand.Intn(100); isNullValue {
+				value = "null"
+			}
+
 			cellsOfColumn = append(cellsOfColumn, value)
 		}
 

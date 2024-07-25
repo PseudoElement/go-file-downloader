@@ -20,10 +20,11 @@ type DownloadSqlReqBody struct {
 type TextColumnInfo struct {
 	Name string `json:"name"`
 	/* 'BOOL' or 'NUMBER' or 'STRING' */
-	Type              string `json:"type"`
-	NullValuesPercent int    `json:"null_values_percent"`
-	Min               int    `json:"min"`
-	Max               int    `json:"max"`
+	Type string `json:"type"`
+	// from 0 to 100%
+	NullValuesPercent int `json:"null_values_percent"`
+	Min               int `json:"min"`
+	Max               int `json:"max"`
 }
 
 type SqlColumnInfo struct {
