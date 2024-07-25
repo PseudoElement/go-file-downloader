@@ -19,6 +19,17 @@ func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req
 		api_module.FailResponse(w, e.Error(), 400)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(200)
 	http.ServeFile(w, req, file.Name())
+}
+
+func (m *DownloaderModule) _testController(w http.ResponseWriter, req *http.Request) {
+	f, err := m.MockCreateFile()
+	if err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
+		return
+	}
+
+	w.WriteHeader(200)
+	http.ServeFile(w, req, f.Name())
 }

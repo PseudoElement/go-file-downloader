@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 func CreateTempFile(fileName string, extension string, content string) (*os.File, error) {
@@ -16,8 +17,11 @@ func CreateTempFile(fileName string, extension string, content string) (*os.File
 	if err != nil {
 		return nil, err
 	}
-	defer os.Remove(file.Name())
 	defer file.Close()
+	go func() {
+		time.Sleep(time.Millisecond * 100)
+		os.Remove(file.Name())
+	}()
 
 	fmt.Println(file.Name())
 

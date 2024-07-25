@@ -24,17 +24,17 @@ func NewDownloaderService() *DownloaderService {
 }
 
 func (srv *DownloaderService) CreateTxtFileWithContentSync(body interface{}) (*os.File, error) {
-	var fileContent string
+	var file *os.File
+	var err error
 	switch body.(type) {
 	case types_module.DownloadSqlReqBody:
 		return nil, fmt.Errorf("Method not implemented!")
 	case types_module.DownloadTextReqBody:
-		fileContent, _ = srv.contentCreators[value_types.RAW_TEXT].CreateFileContent(body)
+		textBody, _ := body.(types_module.DownloadTextReqBody)
+		fileContent, _ := srv.contentCreators[value_types.RAW_TEXT].CreateFileContent(textBody)
+		file, err = custom_utils.CreateTempFile(textBody.DocName, textBody.DocType, fileContent)
 	}
 
-	commonReqBody, _ := body.(types_module.DownloadTextReqBody)
-
-	file, err := custom_utils.CreateTempFile(commonReqBody.DocName, commonReqBody.DocType, fileContent)
 	if err != nil {
 		return nil, err
 	}

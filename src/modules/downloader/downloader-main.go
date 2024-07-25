@@ -2,6 +2,7 @@ package downloader_module
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -10,23 +11,24 @@ import (
 
 type DownloaderModule struct {
 	api           *mux.Router
-	downloaderSrv DownloaderService
+	downloaderSrv *DownloaderService
 }
 
 func NewModule(api *mux.Router) *DownloaderModule {
+
 	return &DownloaderModule{
 		api:           api,
-		downloaderSrv: *NewDownloaderService(),
+		downloaderSrv: NewDownloaderService(),
 	}
 }
 
-func (m *DownloaderModule) CreateFile() {
+func (m *DownloaderModule) MockCreateFile() (*os.File, error) {
 	now := time.Now()
-	_, err := m.downloaderSrv.CreateTxtFileWithContentSync(types_module.DownloadTextReqBody{
+	f, err := m.downloaderSrv.CreateTxtFileWithContentSync(types_module.DownloadTextReqBody{
 		CommonReqBody: types_module.CommonReqBody{
 			DocType:   "pdf",
 			DocName:   "Borrow",
-			RowsCount: 1_000,
+			RowsCount: 10_000,
 		},
 		ColumnsData: []types_module.TextColumnInfo{
 			types_module.TextColumnInfo{
@@ -77,7 +79,7 @@ func (m *DownloaderModule) CreateFile() {
 			},
 		},
 	})
-
-	fmt.Println("Error ===> ", err)
 	fmt.Println("It took ", time.Since(now))
+
+	return f, err
 }
