@@ -21,7 +21,7 @@ func NewTextContentCreator() *TextContentCreator {
 func (srv *TextContentCreator) CreateFileContent(body interface{}) (string, error) {
 	textBody, ok := body.(types_module.DownloadTextReqBody)
 	if !ok {
-		return "", fmt.Errorf("invalid body type")
+		return "", fmt.Errorf("[TextContentCreator] invalid body type")
 	}
 
 	rowsCountWithHeader := textBody.RowsCount + 1
@@ -65,7 +65,7 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 			case value_types.AUTO_INCREMENT:
 				value = strconv.Itoa(incrementFn())
 			default:
-				value = "empty"
+				value = "unknown"
 			}
 
 			if isNullValue := columnData.NullValuesPercent > rand.Intn(100); isNullValue {
