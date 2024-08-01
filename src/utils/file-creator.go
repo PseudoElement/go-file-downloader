@@ -17,9 +17,10 @@ func CreateTempFile(fileName string, extension string, content string) (*os.File
 	if err != nil {
 		return nil, err
 	}
+
 	defer file.Close()
 	go func() {
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 400)
 		os.Remove(file.Name())
 	}()
 

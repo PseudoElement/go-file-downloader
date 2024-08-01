@@ -7,8 +7,7 @@ import (
 )
 
 const (
-	possibleCons   = "bcdfghjklmnpqrstvwxyz"
-	possibleVowels = "aeiou"
+	possibleLetters = "bcdfghjklmnpqrstvwxyzaeiou"
 )
 
 func CreateRandowWordForSqlTable(minLength int, maxLength int, startUpperCase bool) string {
@@ -16,27 +15,17 @@ func CreateRandowWordForSqlTable(minLength int, maxLength int, startUpperCase bo
 }
 
 func CreateRandomWord(minLength int, maxLength int, startUpperCase bool) string {
-	word := ""
+	var str strings.Builder
 	randomLength := CreateRandomNumber(minLength, maxLength)
 
 	for ind := range randomLength {
-		isVowel := rand.Intn(100) > 50
-
-		var letters string
-		if isVowel {
-			letters = possibleVowels
-		} else {
-			letters = possibleCons
-		}
-
-		randInd := int(math.Max(0, float64(rand.Intn(len(letters))-1)))
-		randomLetter := string(letters[randInd])
+		randInd := int(math.Max(0, float64(rand.Intn(len(possibleLetters))-1)))
+		randomLetter := string(possibleLetters[randInd])
 		if startUpperCase && ind == 0 {
 			randomLetter = strings.ToUpper(randomLetter)
 		}
-
-		word += randomLetter
+		str.WriteString(randomLetter)
 	}
 
-	return word
+	return str.String()
 }

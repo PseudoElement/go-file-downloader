@@ -2,13 +2,18 @@ package content_creators
 
 import (
 	"fmt"
+	"strconv"
+	"sync"
 
 	sql_constants "github.com/pseudoelement/go-file-downloader/src/constants/sql"
+	services_models "github.com/pseudoelement/go-file-downloader/src/services/models"
 	types_module "github.com/pseudoelement/go-file-downloader/src/types"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
 )
 
-type SqlContentCreator struct{}
+type SqlContentCreator struct {
+	mu sync.Mutex
+}
 
 func NewSqlContentCreator() *SqlContentCreator {
 	return &SqlContentCreator{}
@@ -47,6 +52,57 @@ func (srv *SqlContentCreator) CreateFileContent(body interface{}) (string, error
 	return sqlFileContent, nil
 }
 
+func (srv *SqlContentCreator) CreateFileContentAsync(body interface{}) (string, error) {
+	sqlBody, ok := body.(types_module.DownloadSqlReqBody)
+	if !ok {
+		return "", fmt.Errorf("[SqlContentCreator] Invalid body type")
+	}
+	var sqlFileContent string
+
+	if sqlBody.NeedCreateTable {
+		createTableQuery, err := srv.addTableCreationQuery(sqlBody)
+		if err != nil {
+			return "", err
+		}
+		sqlFileContent += createTableQuery
+	}
+
+	incrementFns := make(map[string]func() int)
+	for _, column := range sqlBody.ColumnsData {
+		if column.Type == sql_constants.AUTO_INCREMENT {
+			incrementFns[column.Name] = custom_utils.AutoIncrement(1)
+		}
+	}
+
+	errorChan := make(chan error)
+	doneChan := make(chan bool)
+
+	for i := 0; i < sqlBody.RowsCount; i++ {
+		go func(index int) {
+			srv.mu.Lock()
+			defer srv.mu.Unlock()
+			isLast := index == sqlBody.RowsCount-1
+
+			row, err := srv.addInsertRowQuery(sqlBody.ColumnsData, sqlBody.TableName, incrementFns)
+			sqlFileContent += row + "\n\n"
+
+			if err != nil {
+				errorChan <- err
+			}
+			if isLast {
+				doneChan <- true
+			}
+		}(i)
+	}
+
+	select {
+	case err := <-errorChan:
+		return "", err
+	case <-doneChan:
+		return sqlFileContent, nil
+	}
+}
+
 func (srv *SqlContentCreator) addTableCreationQuery(body types_module.DownloadSqlReqBody) (string, error) {
 	firstRow := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s", body.TableName)
 	var columns string
@@ -82,13 +138,13 @@ func (srv *SqlContentCreator) addTableCreationQuery(body types_module.DownloadSq
 func (srv *SqlContentCreator) addInsertRowQuery(columnsData []types_module.SqlColumnInfo, tableName string, incrementFns map[string]func() int) (string, error) {
 	var values string
 	var columnNames string
+
 	for i, column := range columnsData {
-		value, err := custom_utils.CreateRandomValueConvertedToString(custom_utils.RandomValueCreatorParams{
+		value, err := srv.createRandomValue(services_models.RandomValueCreatorParams{
 			ValueType:   column.Type,
 			Min:         column.Min,
 			Max:         column.Max,
 			IncrementFn: incrementFns[column.Name],
-			IsSqlValue:  true,
 		})
 		if err != nil {
 			return "", err
@@ -107,6 +163,27 @@ func (srv *SqlContentCreator) addInsertRowQuery(columnsData []types_module.SqlCo
 VALUES (%s);`, tableName, columnNames, values)
 
 	return insertRowQuery, nil
+}
+
+func (srv *SqlContentCreator) createRandomValue(params services_models.RandomValueCreatorParams) (string, error) {
+	var value string
+	switch params.ValueType {
+	case sql_constants.BOOL:
+		value = string(custom_utils.CreateRandomByteForSql())
+	case sql_constants.NUMBER:
+		value = strconv.Itoa(custom_utils.CreateRandomNumber(params.Min, params.Max))
+	case sql_constants.STRING:
+		value = custom_utils.CreateRandowWordForSqlTable(params.Min, params.Max, false)
+	case sql_constants.AUTO_INCREMENT:
+		if params.IncrementFn == nil {
+			return "", fmt.Errorf("[SqlContentCreator] params.incrementFn can't be empty!")
+		}
+		value = strconv.Itoa(params.IncrementFn())
+	default:
+		value = "unknown"
+	}
+
+	return value, nil
 }
 
 var _ types_module.FileContentCreator = (*SqlContentCreator)(nil)

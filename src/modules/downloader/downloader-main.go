@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	mock_constants "github.com/pseudoelement/go-file-downloader/src/constants/mock"
 	types_module "github.com/pseudoelement/go-file-downloader/src/types"
 )
 
@@ -23,127 +24,64 @@ func NewModule(api *mux.Router) *DownloaderModule {
 
 func (m *DownloaderModule) MockCreateTextFile() (*os.File, error) {
 	now := time.Now()
-	f, err := m.downloaderSrv.CreateTxtFileWithContentSync(types_module.DownloadTextReqBody{
+	f, err := m.downloaderSrv.CreateFileWithContentSync(types_module.DownloadTextReqBody{
 		CommonReqBody: types_module.CommonReqBody{
 			DocType:   "pdf",
 			DocName:   "Borrow",
-			RowsCount: 10_000,
+			RowsCount: mock_constants.ROWS_COUNT,
 		},
-		ColumnsData: []types_module.TextColumnInfo{
-			types_module.TextColumnInfo{
-				Name:              "Id",
-				Type:              "AUTO_INCREMENT",
-				NullValuesPercent: 0,
-			},
-			types_module.TextColumnInfo{
-				Name:              "Name",
-				Type:              "STRING",
-				NullValuesPercent: 0,
-				Min:               5,
-				Max:               10,
-			},
-			types_module.TextColumnInfo{
-				Name:              "Surname",
-				Type:              "STRING",
-				NullValuesPercent: 0,
-				Min:               10,
-				Max:               15,
-			},
-			types_module.TextColumnInfo{
-				Name: "IsMarried",
-				Type: "BOOL",
-			},
-			types_module.TextColumnInfo{
-				Name:              "Region",
-				Type:              "STRING",
-				NullValuesPercent: 0,
-				Min:               17,
-				Max:               30,
-			},
-			types_module.TextColumnInfo{
-				Name:              "Child",
-				Type:              "STRING",
-				NullValuesPercent: 90,
-				Min:               20,
-				Max:               30,
-			},
-			types_module.TextColumnInfo{
-				Name:              "WorkTitle",
-				Type:              "STRING",
-				NullValuesPercent: 0,
-				Min:               5,
-				Max:               10,
-			},
-		},
+		ColumnsData: mock_constants.MOCK_TEXT_COLUMNS_DATA,
 	})
-	fmt.Println("It took ", time.Since(now))
+	fmt.Println("MockCreateTextFile Sync took ", time.Since(now))
 
 	return f, err
 }
 
 func (m *DownloaderModule) MockCreateSqlFile() (*os.File, error) {
 	now := time.Now()
-	f, err := m.downloaderSrv.CreateTxtFileWithContentSync(types_module.DownloadSqlReqBody{
+	f, err := m.downloaderSrv.CreateFileWithContentSync(types_module.DownloadSqlReqBody{
 		CommonReqBody: types_module.CommonReqBody{
 			DocType:   "sql",
 			DocName:   "bimba-production",
-			RowsCount: 20_000,
+			RowsCount: mock_constants.ROWS_COUNT,
 		},
 		TableName:       "my_first_table",
 		NeedCreateTable: true,
-		ColumnsData: []types_module.SqlColumnInfo{
-			types_module.SqlColumnInfo{
-				Name:              "id",
-				Type:              "AUTO_INCREMENT",
-				IsPrimaryKey:      true,
-				NullValuesPercent: 0,
-			},
-			types_module.SqlColumnInfo{
-				Name:              "first_name",
-				Type:              "STRING",
-				NullValuesPercent: 0,
-				Min:               5,
-				Max:               10,
-			},
-			types_module.SqlColumnInfo{
-				Name:              "last_name",
-				Type:              "STRING",
-				NullValuesPercent: 0,
-				Min:               10,
-				Max:               15,
-			},
-			types_module.SqlColumnInfo{
-				Name: "is_married",
-				Type: "BOOL",
-			},
-			types_module.SqlColumnInfo{
-				Name:              "region",
-				Type:              "STRING",
-				NullValuesPercent: 0,
-				Min:               17,
-				Max:               30,
-			},
-			types_module.SqlColumnInfo{
-				Name:              "child",
-				Type:              "STRING",
-				NullValuesPercent: 90,
-				Min:               20,
-				Max:               30,
-			},
-			types_module.SqlColumnInfo{
-				Name: "work_id",
-				Type: "STRING",
-				ForeignKeyData: types_module.ForeignKeyData{
-					RefTableName:  "works",
-					RefColumnName: "work_id",
-				},
-				NullValuesPercent: 0,
-				Min:               5,
-				Max:               10,
-			},
-		},
+		ColumnsData:     mock_constants.MOCK_SQL_COLUMNS_DATA,
 	})
-	fmt.Println("It took ", time.Since(now))
+	fmt.Println("MockCreateSqlFile Sync took ", time.Since(now))
+
+	return f, err
+}
+
+func (m *DownloaderModule) MockCreateSqlFileAsync() (*os.File, error) {
+	now := time.Now()
+	f, err := m.downloaderSrv.CreateFileWithContentAsync(types_module.DownloadSqlReqBody{
+		CommonReqBody: types_module.CommonReqBody{
+			DocType:   "sql",
+			DocName:   "bimba-production",
+			RowsCount: mock_constants.ROWS_COUNT,
+		},
+		TableName:       "my_first_table",
+		NeedCreateTable: true,
+		ColumnsData:     mock_constants.MOCK_SQL_COLUMNS_DATA,
+	})
+	fmt.Println("MockCreateSqlFile Async took ", time.Since(now))
+
+	return f, err
+}
+
+func (m *DownloaderModule) MockCreateTextFileAsync() (*os.File, error) {
+	now := time.Now()
+	f, err := m.downloaderSrv.CreateFileWithContentAsync(types_module.DownloadTextReqBody{
+		CommonReqBody: types_module.CommonReqBody{
+			DocType:   "pdf",
+			DocName:   "Borrow",
+			RowsCount: mock_constants.ROWS_COUNT,
+		},
+		ColumnsData: mock_constants.MOCK_TEXT_COLUMNS_DATA,
+	})
+	fmt.Println("MockCreateTextFile Async took ", time.Since(now))
 
 	return f, err
 }

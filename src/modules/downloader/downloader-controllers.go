@@ -15,7 +15,7 @@ func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req
 		return
 	}
 
-	file, e := m.downloaderSrv.CreateTxtFileWithContentSync(body)
+	file, e := m.downloaderSrv.CreateFileWithContentSync(body)
 	if e != nil {
 		api_module.FailResponse(w, e.Error(), 400)
 	}
@@ -48,6 +48,28 @@ func (m *DownloaderModule) _testTextFileController(w http.ResponseWriter, req *h
 
 func (m *DownloaderModule) _testSqlFileController(w http.ResponseWriter, req *http.Request) {
 	f, err := m.MockCreateSqlFile()
+	if err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
+		return
+	}
+
+	w.WriteHeader(200)
+	http.ServeFile(w, req, f.Name())
+}
+
+func (m *DownloaderModule) _testTextFileAsyncController(w http.ResponseWriter, req *http.Request) {
+	f, err := m.MockCreateTextFileAsync()
+	if err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
+		return
+	}
+
+	w.WriteHeader(200)
+	http.ServeFile(w, req, f.Name())
+}
+
+func (m *DownloaderModule) _testSqlFileAsyncController(w http.ResponseWriter, req *http.Request) {
+	f, err := m.MockCreateSqlFileAsync()
 	if err != nil {
 		api_module.FailResponse(w, err.Error(), 400)
 		return

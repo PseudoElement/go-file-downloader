@@ -23,7 +23,7 @@ func NewDownloaderService() *DownloaderService {
 	return srv
 }
 
-func (srv *DownloaderService) CreateTxtFileWithContentSync(body interface{}) (*os.File, error) {
+func (srv *DownloaderService) CreateFileWithContentSync(body interface{}) (*os.File, error) {
 	var file *os.File
 	var err error
 	switch body.(type) {
@@ -37,6 +37,33 @@ func (srv *DownloaderService) CreateTxtFileWithContentSync(body interface{}) (*o
 	case types_module.DownloadTextReqBody:
 		textBody, _ := body.(types_module.DownloadTextReqBody)
 		fileContent, _ := srv.contentCreators[sql_constants.RAW_TEXT].CreateFileContent(textBody)
+		file, err = custom_utils.CreateTempFile(textBody.DocName, textBody.DocType, fileContent)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}
+
+func (srv *DownloaderService) CreateFileWithContentAsync(body interface{}) (*os.File, error) {
+	var file *os.File
+	var err error
+	switch body.(type) {
+	case types_module.DownloadSqlReqBody:
+		sqlBody, _ := body.(types_module.DownloadSqlReqBody)
+		fileContent, er := srv.contentCreators[sql_constants.SQL].CreateFileContentAsync(sqlBody)
+		if er != nil {
+			return nil, er
+		}
+		file, err = custom_utils.CreateTempFile(sqlBody.DocName, sqlBody.DocType, fileContent)
+	case types_module.DownloadTextReqBody:
+		textBody, _ := body.(types_module.DownloadTextReqBody)
+		fileContent, er := srv.contentCreators[sql_constants.RAW_TEXT].CreateFileContentAsync(textBody)
+		if er != nil {
+			return nil, er
+		}
 		file, err = custom_utils.CreateTempFile(textBody.DocName, textBody.DocType, fileContent)
 	}
 
