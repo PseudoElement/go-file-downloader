@@ -24,17 +24,6 @@ func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req
 	http.ServeFile(w, req, file.Name())
 }
 
-func (m *DownloaderModule) _testController(w http.ResponseWriter, req *http.Request) {
-	f, err := m.MockCreateFile()
-	if err != nil {
-		api_module.FailResponse(w, err.Error(), 400)
-		return
-	}
-
-	w.WriteHeader(200)
-	http.ServeFile(w, req, f.Name())
-}
-
 func (m *DownloaderModule) _downloadSqlFileController(w http.ResponseWriter, req *http.Request) {
 	body, err := api_module.ParseReqBody[types_module.DownloadSqlReqBody](w, req)
 	if err != nil {
@@ -44,4 +33,26 @@ func (m *DownloaderModule) _downloadSqlFileController(w http.ResponseWriter, req
 
 	w.WriteHeader(200)
 	json.NewEncoder(w).Encode(body)
+}
+
+func (m *DownloaderModule) _testTextFileController(w http.ResponseWriter, req *http.Request) {
+	f, err := m.MockCreateTextFile()
+	if err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
+		return
+	}
+
+	w.WriteHeader(200)
+	http.ServeFile(w, req, f.Name())
+}
+
+func (m *DownloaderModule) _testSqlFileController(w http.ResponseWriter, req *http.Request) {
+	f, err := m.MockCreateSqlFile()
+	if err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
+		return
+	}
+
+	w.WriteHeader(200)
+	http.ServeFile(w, req, f.Name())
 }

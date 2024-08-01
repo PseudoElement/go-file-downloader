@@ -1,4 +1,4 @@
-package value_types
+package sql_constants
 
 const (
 	BOOL           = "BOOL"

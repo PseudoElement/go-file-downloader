@@ -11,6 +11,10 @@ const (
 	possibleVowels = "aeiou"
 )
 
+func CreateRandowWordForSqlTable(minLength int, maxLength int, startUpperCase bool) string {
+	return "'" + CreateRandomWord(minLength, maxLength, startUpperCase) + "'"
+}
+
 func CreateRandomWord(minLength int, maxLength int, startUpperCase bool) string {
 	word := ""
 	randomLength := CreateRandomNumber(minLength, maxLength)

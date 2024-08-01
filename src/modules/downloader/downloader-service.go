@@ -1,10 +1,9 @@
 package downloader_module
 
 import (
-	"fmt"
 	"os"
 
-	value_types "github.com/pseudoelement/go-file-downloader/src/constants/value-types"
+	sql_constants "github.com/pseudoelement/go-file-downloader/src/constants/sql"
 	content_creators "github.com/pseudoelement/go-file-downloader/src/services/content-creators"
 	types_module "github.com/pseudoelement/go-file-downloader/src/types"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
@@ -17,7 +16,8 @@ type DownloaderService struct {
 func NewDownloaderService() *DownloaderService {
 	srv := &DownloaderService{
 		contentCreators: map[string]types_module.FileContentCreator{
-			value_types.RAW_TEXT: content_creators.NewTextContentCreator(),
+			sql_constants.RAW_TEXT: content_creators.NewTextContentCreator(),
+			sql_constants.SQL:      content_creators.NewSqlContentCreator(),
 		},
 	}
 	return srv
@@ -28,11 +28,15 @@ func (srv *DownloaderService) CreateTxtFileWithContentSync(body interface{}) (*o
 	var err error
 	switch body.(type) {
 	case types_module.DownloadSqlReqBody:
-		// sqlBody := body.(types_module.DownloadSqlReqBody)
-		return nil, fmt.Errorf("Method not implemented!")
+		sqlBody, _ := body.(types_module.DownloadSqlReqBody)
+		fileContent, er := srv.contentCreators[sql_constants.SQL].CreateFileContent(sqlBody)
+		if er != nil {
+			return nil, er
+		}
+		file, err = custom_utils.CreateTempFile(sqlBody.DocName, sqlBody.DocType, fileContent)
 	case types_module.DownloadTextReqBody:
 		textBody, _ := body.(types_module.DownloadTextReqBody)
-		fileContent, _ := srv.contentCreators[value_types.RAW_TEXT].CreateFileContent(textBody)
+		fileContent, _ := srv.contentCreators[sql_constants.RAW_TEXT].CreateFileContent(textBody)
 		file, err = custom_utils.CreateTempFile(textBody.DocName, textBody.DocType, fileContent)
 	}
 

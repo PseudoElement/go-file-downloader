@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 	"slices"
-	"strconv"
 	"strings"
 
-	value_types "github.com/pseudoelement/go-file-downloader/src/constants/value-types"
 	types_module "github.com/pseudoelement/go-file-downloader/src/types"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
 )
@@ -25,7 +23,10 @@ func (srv *TextContentCreator) CreateFileContent(body interface{}) (string, erro
 	}
 
 	rowsCountWithHeader := textBody.RowsCount + 1
-	columnsWithValuesInCells := srv.createCellsForColumns(textBody)
+	columnsWithValuesInCells, err := srv.createCellsForColumns(textBody)
+	if err != nil {
+		return "", err
+	}
 	columnsWithFullCells := srv.createCellsWithSpacesAndParagraphs(columnsWithValuesInCells)
 	fileContent := srv.concatAllCellsInTable(columnsWithFullCells, rowsCountWithHeader, len(textBody.ColumnsData))
 
@@ -45,7 +46,8 @@ func (srv *TextContentCreator) concatAllCellsInTable(columnsWithFullCells [][]st
 	return fileContent
 }
 
-func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadTextReqBody) [][]string {
+func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadTextReqBody) ([][]string, error) {
+	var err error
 	columnsWithValuesInCells := custom_utils.Map(body.ColumnsData, func(columnData types_module.TextColumnInfo, ind int) []string {
 		cellsOfColumn := []string{}
 		incrementFn := custom_utils.AutoIncrement(1)
@@ -54,19 +56,14 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 				cellsOfColumn = append(cellsOfColumn, columnData.Name)
 			}
 
-			var value string
-			switch columnData.Type {
-			case value_types.BOOL:
-				value = strconv.FormatBool(custom_utils.CreateRandomBool())
-			case value_types.NUMBER:
-				value = strconv.Itoa(custom_utils.CreateRandomNumber(columnData.Min, columnData.Max))
-			case value_types.STRING:
-				value = custom_utils.CreateRandomWord(columnData.Min, columnData.Max, false)
-			case value_types.AUTO_INCREMENT:
-				value = strconv.Itoa(incrementFn())
-			default:
-				value = "unknown"
-			}
+			value, e := custom_utils.CreateRandomValueConvertedToString(custom_utils.RandomValueCreatorParams{
+				ValueType:   columnData.Type,
+				Min:         columnData.Min,
+				Max:         columnData.Max,
+				IncrementFn: incrementFn,
+				IsSqlValue:  false,
+			})
+			err = e
 
 			if isNullValue := columnData.NullValuesPercent > rand.Intn(100); isNullValue {
 				value = "null"
@@ -78,7 +75,11 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 		return cellsOfColumn
 	})
 
-	return columnsWithValuesInCells
+	if err != nil {
+		return nil, err
+	}
+
+	return columnsWithValuesInCells, nil
 }
 
 func (srv *TextContentCreator) createCellsWithSpacesAndParagraphs(columnsWithValuesInCells [][]string) [][]string {
