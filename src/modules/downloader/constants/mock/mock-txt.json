@@ -1,0 +1,37 @@
+{
+    "rows_count": 200,
+    "doc_type": "txt",
+    "doc_name": "HELLO",
+    "columns_data": [
+      {
+        "name": "id",
+        "type": "AUTO_INCREMENT"
+      },
+      {
+        "name":              "first_name",
+        "type":              "FIRST_NAME",
+        "null_values_percent": 0,
+        "min":               5,
+        "max":               15
+      },
+      {
+        "name":              "last_name",
+        "type":              "LAST_NAME",
+        "null_values_percent": 0,
+        "min":               5,
+        "max":               0
+      },
+      {
+        "name":              "child",
+        "type":              "STRING",
+        "null_values_percent": 50,
+        "min":               10,
+        "max":               20
+      },
+      {
+        "name":              "car",
+        "type":              "CAR",
+        "null_values_percent": 20
+      }
+    ]
+}

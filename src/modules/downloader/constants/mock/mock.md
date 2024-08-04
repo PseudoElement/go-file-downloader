@@ -1,1 +1,0 @@
-"{\"cmb\": {\"rows_count\": 100, \"doc_type\": \"txt\", \"doc_name\": \"req-bin\"}, \"columns_data\": [{\"name\": \"id\", \"type\": \"AUTO_INCREMENT\", \"min\": 5, \"max\": 20}]}"

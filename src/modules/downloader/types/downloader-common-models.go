@@ -11,11 +11,6 @@ type DownloadTextReqBody struct {
 	ColumnsData []TextColumnInfo `json:"columns_data"`
 }
 
-// type DownloadTextReqBody struct {
-// 	Cmb         CommonReqBody    `json:"cmb"`
-// 	ColumnsData []TextColumnInfo `json:"columns_data"`
-// }
-
 type DownloadSqlReqBody struct {
 	CommonReqBody
 	TableName       string          `json:"table_name"`

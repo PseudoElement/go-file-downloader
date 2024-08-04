@@ -1,30 +1,28 @@
 package downloader_module
 
 import (
-	"encoding/json"
+	"fmt"
 	"net/http"
 
+	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
 	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 	api_module "github.com/pseudoelement/golang-utils/src/api"
 )
 
 func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req *http.Request) {
-	decoder := json.NewDecoder(req.Body)
-	body := new(types_module.DownloadTextReqBody)
-	e := decoder.Decode(&body)
-
-	// body, err := api_module.ParseReqBody[types_module.DownloadTextReqBody](w, req)
-	// if err != nil {
-	// 	api_module.FailResponse(w, err.Error(), err.Status())
-	// 	return
-	// }
-	err := m.downloaderSrv.ValidateColumnParams(*body)
+	body, err := api_module.ParseReqBody[types_module.DownloadTextReqBody](w, req)
 	if err != nil {
 		api_module.FailResponse(w, err.Error(), err.Status())
 		return
 	}
+	err = m.downloaderSrv.ValidateColumnParams(body)
+	if err != nil {
+		api_module.FailResponse(w, err.Error(), err.Status())
+		return
+	}
+	fmt.Println("AFTER_VALIDATION ===> ", err)
 
-	file, e := m.downloaderSrv.CreateFileWithContentAsync(*body)
+	file, e := m.downloaderSrv.CreateTempFileWithContent(body, m.contentCreators[sql_constants.RAW_TEXT], true)
 	if e != nil {
 		api_module.FailResponse(w, e.Error(), 400)
 	}
@@ -45,7 +43,7 @@ func (m *DownloaderModule) _downloadSqlFileController(w http.ResponseWriter, req
 		return
 	}
 
-	file, e := m.downloaderSrv.CreateFileWithContentSync(body)
+	file, e := m.downloaderSrv.CreateTempFileWithContent(body, m.contentCreators[sql_constants.RAW_TEXT], false)
 	if e != nil {
 		api_module.FailResponse(w, e.Error(), 400)
 	}

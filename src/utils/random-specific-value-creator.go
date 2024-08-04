@@ -7,6 +7,7 @@ import (
 )
 
 func CreateRandomFirstName(min int, max int) string {
+	min, max = setDefaultMinMaxIfZeros(min, max)
 	randomIndex := rand.Intn(len(common_constants.FIRST_NAMES_ARRAY))
 	firstName := common_constants.FIRST_NAMES_ARRAY[randomIndex]
 	if len(firstName) > max || len(firstName) < min {
@@ -17,6 +18,7 @@ func CreateRandomFirstName(min int, max int) string {
 }
 
 func CreateRandomLastName(min int, max int) string {
+	min, max = setDefaultMinMaxIfZeros(min, max)
 	randomIndex := rand.Intn(len(common_constants.LAST_NAMES_ARRAY))
 	lastName := common_constants.LAST_NAMES_ARRAY[randomIndex]
 	if len(lastName) > max || len(lastName) < min {
@@ -27,6 +29,7 @@ func CreateRandomLastName(min int, max int) string {
 }
 
 func CreateRandomCarName(min int, max int) string {
+	min, max = setDefaultMinMaxIfZeros(min, max)
 	randomIndex := rand.Intn(len(common_constants.CARS_ARRAY))
 	carName := common_constants.CARS_ARRAY[randomIndex]
 	if len(carName) > max || len(carName) < min {
@@ -37,6 +40,7 @@ func CreateRandomCarName(min int, max int) string {
 }
 
 func CreateRandomCountryName(min int, max int) string {
+	min, max = setDefaultMinMaxIfZeros(min, max)
 	randomIndex := rand.Intn(len(common_constants.COUNTRIES_ARRAY))
 	countryName := common_constants.COUNTRIES_ARRAY[randomIndex]
 	if len(countryName) > max || len(countryName) < min {
@@ -44,4 +48,14 @@ func CreateRandomCountryName(min int, max int) string {
 	} else {
 		return countryName
 	}
+}
+
+func setDefaultMinMaxIfZeros(min int, max int) (int, int) {
+	if min == 0 {
+		min = 5
+	}
+	if max == 0 {
+		max = 20
+	}
+	return min, max
 }

@@ -6,75 +6,34 @@ import (
 
 	app_errors "github.com/pseudoelement/go-file-downloader/src/errors"
 	common_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/common"
-	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
 	downloader_errors "github.com/pseudoelement/go-file-downloader/src/modules/downloader/errors"
-	content_creators "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators"
 	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
 	errors_module "github.com/pseudoelement/golang-utils/src/errors"
 )
 
-type DownloaderService struct {
-	contentCreators map[string]types_module.FileContentCreator
-}
+type DownloaderService struct{}
 
 func NewDownloaderService() *DownloaderService {
-	srv := &DownloaderService{
-		contentCreators: map[string]types_module.FileContentCreator{
-			sql_constants.RAW_TEXT: content_creators.NewTextContentCreator(),
-			sql_constants.SQL:      content_creators.NewSqlContentCreator(),
-		},
-	}
-	return srv
+	return &DownloaderService{}
 }
 
-func (srv *DownloaderService) CreateFileWithContentSync(body interface{}) (*os.File, error) {
-	var file *os.File
+func (srv *DownloaderService) CreateTempFileWithContent(body interface{}, contentCreator types_module.FileContentCreator, isAsync bool) (*os.File, error) {
+	var fileContent string
 	var err error
-	switch body.(type) {
-	case types_module.DownloadSqlReqBody:
-		sqlBody, _ := body.(types_module.DownloadSqlReqBody)
-		fileContent, er := srv.contentCreators[sql_constants.SQL].CreateFileContent(sqlBody)
-		if er != nil {
-			return nil, er
-		}
-		file, err = custom_utils.CreateTempFile(sqlBody.DocName, sqlBody.DocType, fileContent)
-	case types_module.DownloadTextReqBody:
-		textBody, _ := body.(types_module.DownloadTextReqBody)
-		fileContent, _ := srv.contentCreators[sql_constants.RAW_TEXT].CreateFileContent(textBody)
-		file, err = custom_utils.CreateTempFile(textBody.DocName, textBody.DocType, fileContent)
+	if isAsync {
+		fileContent, err = contentCreator.CreateFileContent(body)
+	} else {
+		fileContent, err = contentCreator.CreateFileContentAsync(body)
 	}
-
 	if err != nil {
 		return nil, err
 	}
 
-	return file, nil
-}
-
-func (srv *DownloaderService) CreateFileWithContentAsync(body interface{}) (*os.File, error) {
-	var file *os.File
-	var err error
-	switch body.(type) {
-	case types_module.DownloadSqlReqBody:
-		sqlBody, _ := body.(types_module.DownloadSqlReqBody)
-		fileContent, er := srv.contentCreators[sql_constants.SQL].CreateFileContentAsync(sqlBody)
-		if er != nil {
-			return nil, er
-		}
-		file, err = custom_utils.CreateTempFile(sqlBody.DocName, sqlBody.DocType, fileContent)
-	case types_module.DownloadTextReqBody:
-		textBody, _ := body.(types_module.DownloadTextReqBody)
-		fileContent, er := srv.contentCreators[sql_constants.RAW_TEXT].CreateFileContentAsync(textBody)
-		if er != nil {
-			return nil, er
-		}
-		file, err = custom_utils.CreateTempFile(textBody.DocName, textBody.DocType, fileContent)
-	}
-
-	if err != nil {
-		return nil, err
-	}
+	reflectedBody := reflect.ValueOf(body)
+	docName := reflectedBody.FieldByName("DocName").String()
+	docType := reflectedBody.FieldByName("DocType").String()
+	file, err := custom_utils.CreateTempFile(docName, docType, fileContent)
 
 	return file, nil
 }
@@ -90,29 +49,30 @@ func (srv *DownloaderService) ValidateColumnParams(body interface{}) errors_modu
 	// Get the 'ColumnsData' field
 	columnsDataField := v.FieldByName("ColumnsData")
 	if !columnsDataField.IsValid() {
-		return &app_errors.ApiError{Message: "invalid ColumnsData request body type"}
+		return &app_errors.ApiError{Message: "invalid columns_data request body prop"}
 	}
 
-	// Iterate over the columns
 	for i := 0; i < columnsDataField.Len(); i++ {
 		column := columnsDataField.Index(i)
 
-		// Get the 'Type', 'Min', and 'Max' fields
 		typeField := column.FieldByName("Type")
 		minField := column.FieldByName("Min")
 		maxField := column.FieldByName("Max")
 
-		// Ensure the fields are valid
-		if !typeField.IsValid() || !minField.IsValid() || !maxField.IsValid() {
+		if !minField.IsValid() && !maxField.IsValid() {
 			continue
 		}
 
-		// Get the actual values of the fields
 		columnType := typeField.String()
 		minValue := int(minField.Int())
 		maxValue := int(maxField.Int())
 
-		// Validate the values against the restrictions
+		if minValue > maxValue {
+			return &app_errors.ApiError{Message: "min value should be more than max value"}
+		}
+		if !maxField.IsZero() && maxValue < 5 {
+			return &app_errors.ApiError{Message: "too short max value"}
+		}
 		restrictions, ok := common_constants.RESTRICTIONS_BY_COLUMN_TYPE[columnType]
 		if !ok {
 			continue
