@@ -2,13 +2,16 @@ package content_creators
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 
-	sql_constants "github.com/pseudoelement/go-file-downloader/src/constants/sql"
-	services_models "github.com/pseudoelement/go-file-downloader/src/services/models"
-	types_module "github.com/pseudoelement/go-file-downloader/src/types"
+	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
+	content_creator_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/constants"
+	random_value_factory "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/factories"
+	services_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/models"
+	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
+	sql_utils "github.com/pseudoelement/go-file-downloader/src/utils/sql-utils"
+	slice_utils_module "github.com/pseudoelement/golang-utils/src/utils/slices"
 )
 
 type SqlContentCreator struct {
@@ -167,20 +170,18 @@ VALUES (%s);`, tableName, columnNames, values)
 
 func (srv *SqlContentCreator) createRandomValue(params services_models.RandomValueCreatorParams) (string, error) {
 	var value string
-	switch params.ValueType {
-	case sql_constants.BOOL:
+	if params.ValueType == sql_constants.BOOL {
 		value = string(custom_utils.CreateRandomByteForSql())
-	case sql_constants.NUMBER:
-		value = strconv.Itoa(custom_utils.CreateRandomNumber(params.Min, params.Max))
-	case sql_constants.STRING:
-		value = custom_utils.CreateRandowWordForSqlTable(params.Min, params.Max, false)
-	case sql_constants.AUTO_INCREMENT:
-		if params.IncrementFn == nil {
-			return "", fmt.Errorf("[SqlContentCreator] params.incrementFn can't be empty!")
+	} else {
+		if val, err := random_value_factory.CommonRandomValueFactory(params); err != nil {
+			return "", err
+		} else {
+			value = val
 		}
-		value = strconv.Itoa(params.IncrementFn())
-	default:
-		value = "unknown"
+	}
+
+	if slice_utils_module.Contains(content_creator_constants.TEXTLIKE_VALUE_TYPES, params.ValueType) {
+		value = sql_utils.WrapStringInSingleQuotes(value)
 	}
 
 	return value, nil

@@ -11,6 +11,11 @@ type DownloadTextReqBody struct {
 	ColumnsData []TextColumnInfo `json:"columns_data"`
 }
 
+// type DownloadTextReqBody struct {
+// 	Cmb         CommonReqBody    `json:"cmb"`
+// 	ColumnsData []TextColumnInfo `json:"columns_data"`
+// }
+
 type DownloadSqlReqBody struct {
 	CommonReqBody
 	TableName       string          `json:"table_name"`
@@ -29,7 +34,8 @@ type TextColumnInfo struct {
 }
 
 type SqlColumnInfo struct {
-	Name              string         `json:"name"`
+	Name string `json:"name"`
+	/* 'BOOL' or 'NUMBER' or 'STRING' or 'AUTO_INCREMENT' */
 	Type              string         `json:"type"`
 	NullValuesPercent int            `json:"null_values_percent"`
 	IsPrimaryKey      bool           `json:"is_primary_key"`

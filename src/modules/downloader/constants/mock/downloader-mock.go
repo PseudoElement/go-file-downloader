@@ -1,6 +1,6 @@
 package mock_constants
 
-import types_module "github.com/pseudoelement/go-file-downloader/src/types"
+import types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 
 var ROWS_COUNT = 40_000
 
@@ -13,16 +13,16 @@ var MOCK_SQL_COLUMNS_DATA = []types_module.SqlColumnInfo{
 	},
 	types_module.SqlColumnInfo{
 		Name:              "first_name",
-		Type:              "STRING",
+		Type:              "FIRST_NAME",
 		NullValuesPercent: 0,
 		Min:               5,
-		Max:               10,
+		Max:               15,
 	},
 	types_module.SqlColumnInfo{
 		Name:              "last_name",
-		Type:              "STRING",
+		Type:              "LAST_NAME",
 		NullValuesPercent: 0,
-		Min:               10,
+		Min:               5,
 		Max:               15,
 	},
 	types_module.SqlColumnInfo{
@@ -31,16 +31,16 @@ var MOCK_SQL_COLUMNS_DATA = []types_module.SqlColumnInfo{
 	},
 	types_module.SqlColumnInfo{
 		Name:              "region",
-		Type:              "STRING",
+		Type:              "COUNTRY",
 		NullValuesPercent: 0,
-		Min:               17,
+		Min:               5,
 		Max:               30,
 	},
 	types_module.SqlColumnInfo{
-		Name:              "child",
-		Type:              "STRING",
-		NullValuesPercent: 90,
-		Min:               20,
+		Name:              "car",
+		Type:              "CAR",
+		NullValuesPercent: 50,
+		Min:               5,
 		Max:               30,
 	},
 	types_module.SqlColumnInfo{
@@ -64,14 +64,14 @@ var MOCK_TEXT_COLUMNS_DATA = []types_module.TextColumnInfo{
 	},
 	types_module.TextColumnInfo{
 		Name:              "Name",
-		Type:              "STRING",
+		Type:              "FIRST_NAME",
 		NullValuesPercent: 0,
 		Min:               5,
 		Max:               10,
 	},
 	types_module.TextColumnInfo{
 		Name:              "Surname",
-		Type:              "STRING",
+		Type:              "LAST_NAME",
 		NullValuesPercent: 0,
 		Min:               10,
 		Max:               15,
@@ -81,10 +81,10 @@ var MOCK_TEXT_COLUMNS_DATA = []types_module.TextColumnInfo{
 		Type: "BOOL",
 	},
 	types_module.TextColumnInfo{
-		Name:              "Region",
-		Type:              "STRING",
+		Name:              "Country",
+		Type:              "COUNTRY",
 		NullValuesPercent: 0,
-		Min:               17,
+		Min:               5,
 		Max:               30,
 	},
 	types_module.TextColumnInfo{

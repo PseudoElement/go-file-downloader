@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	mock_constants "github.com/pseudoelement/go-file-downloader/src/constants/mock"
-	types_module "github.com/pseudoelement/go-file-downloader/src/types"
+	mock_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/mock"
+	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 )
 
 type DownloaderModule struct {

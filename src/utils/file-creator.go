@@ -20,7 +20,7 @@ func CreateTempFile(fileName string, extension string, content string) (*os.File
 
 	defer file.Close()
 	go func() {
-		time.Sleep(time.Millisecond * 400)
+		time.Sleep(time.Millisecond * 1000)
 		os.Remove(file.Name())
 	}()
 

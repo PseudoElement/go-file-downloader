@@ -10,12 +10,8 @@ const (
 	possibleLetters = "bcdfghjklmnpqrstvwxyzaeiou"
 )
 
-func CreateRandowWordForSqlTable(minLength int, maxLength int, startUpperCase bool) string {
-	return "'" + CreateRandomWord(minLength, maxLength, startUpperCase) + "'"
-}
-
 func CreateRandomWord(minLength int, maxLength int, startUpperCase bool) string {
-	var str strings.Builder
+	var str = ""
 	randomLength := CreateRandomNumber(minLength, maxLength)
 
 	for ind := range randomLength {
@@ -24,8 +20,8 @@ func CreateRandomWord(minLength int, maxLength int, startUpperCase bool) string 
 		if startUpperCase && ind == 0 {
 			randomLetter = strings.ToUpper(randomLetter)
 		}
-		str.WriteString(randomLetter)
+		str += randomLetter
 	}
 
-	return str.String()
+	return str
 }

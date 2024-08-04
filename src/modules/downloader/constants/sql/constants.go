@@ -5,6 +5,10 @@ const (
 	NUMBER         = "NUMBER"
 	STRING         = "STRING"
 	AUTO_INCREMENT = "AUTO_INCREMENT"
+	FIRST_NAME     = "FIRST_NAME"
+	LAST_NAME      = "LAST_NAME"
+	COUNTRY        = "COUNTRY"
+	CAR            = "CAR"
 )
 
 const (

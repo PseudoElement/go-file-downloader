@@ -1,4 +1,4 @@
-package custom_utils
+package slice_utils
 
 func Map[T any, R any](slice []T, fn func(el T, index int) R) []R {
 	sl := []R{}
