@@ -50,6 +50,17 @@ func CreateRandomCountryName(min int, max int) string {
 	}
 }
 
+func CreateRandomWork(min int, max int) string {
+	min, max = setDefaultMinMaxIfZeros(min, max)
+	randomIndex := rand.Intn(len(common_constants.WORKS_ARRAY))
+	work := common_constants.WORKS_ARRAY[randomIndex]
+	if len(work) > max || len(work) < min {
+		return CreateRandomWork(min, max)
+	} else {
+		return work
+	}
+}
+
 func setDefaultMinMaxIfZeros(min int, max int) (int, int) {
 	if min == 0 {
 		min = 5

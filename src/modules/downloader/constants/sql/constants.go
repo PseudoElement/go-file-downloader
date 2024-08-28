@@ -9,6 +9,7 @@ const (
 	LAST_NAME      = "LAST_NAME"
 	COUNTRY        = "COUNTRY"
 	CAR            = "CAR"
+	WORK           = "WORK"
 )
 
 const (

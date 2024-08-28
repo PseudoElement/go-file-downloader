@@ -22,6 +22,8 @@ func CommonRandomValueFactory(params services_models.RandomValueCreatorParams) (
 		value = custom_utils.CreateRandomLastName(params.Min, params.Max)
 	case sql_constants.COUNTRY:
 		value = custom_utils.CreateRandomCountryName(params.Min, params.Max)
+	case sql_constants.WORK:
+		value = custom_utils.CreateRandomWork(params.Min, params.Max)
 	case sql_constants.STRING:
 		value = custom_utils.CreateRandomWord(params.Min, params.Max, false)
 	case sql_constants.AUTO_INCREMENT:
