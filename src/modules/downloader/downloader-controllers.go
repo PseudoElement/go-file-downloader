@@ -10,10 +10,6 @@ import (
 )
 
 func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
 	body, err := api_module.ParseReqBody[types_module.DownloadTextReqBody](w, req)
 	if err != nil {
 		api_module.FailResponse(w, err.Error(), err.Status())
@@ -37,11 +33,8 @@ func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req
 }
 
 func (m *DownloaderModule) _downloadSqlFileController(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
 	body, err := api_module.ParseReqBody[types_module.DownloadSqlReqBody](w, req)
+	fmt.Println("BODY =====> ", body)
 	if err != nil {
 		api_module.FailResponse(w, err.Error(), err.Status())
 		return
@@ -52,7 +45,7 @@ func (m *DownloaderModule) _downloadSqlFileController(w http.ResponseWriter, req
 		return
 	}
 
-	file, e := m.downloaderSrv.CreateTempFileWithContent(body, m.contentCreators[sql_constants.RAW_TEXT], false)
+	file, e := m.downloaderSrv.CreateTempFileWithContent(body, m.contentCreators[sql_constants.SQL], false)
 	if e != nil {
 		api_module.FailResponse(w, e.Error(), 400)
 	}

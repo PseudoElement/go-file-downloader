@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	downloader_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader"
 	healthcheck_module "github.com/pseudoelement/go-file-downloader/src/modules/healthcheck"
+	"github.com/rs/cors"
 )
 
 func main() {
@@ -21,10 +21,18 @@ func main() {
 	healthModule.SetRoutes()
 	downloaderModule.SetRoutes()
 
-	methods := handlers.AllowedMethods([]string{"POST", "GET", "PUT", "DELETE", "OPTIONS"})
-	ttl := handlers.MaxAge(3600)
-	origins := handlers.AllowedOrigins([]string{"*"})
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "OPTIONS", "PUT", "DELTE"},
+		AllowOriginFunc: func(origin string) bool {
+			return true
+		},
+		AllowCredentials: true,
+		MaxAge:           10,
+		Debug:            true,
+	})
+	handler := c.Handler(r)
 
 	fmt.Println("Listening port :8080")
-	log.Fatal(http.ListenAndServe("127.0.0.1:8080", handlers.CORS(methods, ttl, origins)(api)))
+	log.Fatal(http.ListenAndServe("127.0.0.1:8080", handler))
 }
