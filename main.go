@@ -21,7 +21,7 @@ func main() {
 	healthModule.SetRoutes()
 	downloaderModule.SetRoutes()
 
-	methods := handlers.AllowedMethods([]string{"POST", "GET", "PUT", "DELETE"})
+	methods := handlers.AllowedMethods([]string{"POST", "GET", "PUT", "DELETE", "OPTIONS"})
 	ttl := handlers.MaxAge(3600)
 	origins := handlers.AllowedOrigins([]string{"*"})
 
