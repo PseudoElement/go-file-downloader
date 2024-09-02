@@ -22,9 +22,9 @@ func (srv *DownloaderService) CreateTempFileWithContent(body interface{}, conten
 	var fileContent string
 	var err error
 	if isAsync {
-		fileContent, err = contentCreator.CreateFileContent(body)
-	} else {
 		fileContent, err = contentCreator.CreateFileContentAsync(body)
+	} else {
+		fileContent, err = contentCreator.CreateFileContent(body)
 	}
 	if err != nil {
 		return nil, err

@@ -69,11 +69,12 @@ func (srv *TextContentCreator) concatAllCellsInTable(columnsWithFullCells [][]st
 }
 
 func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadTextReqBody) ([][]string, error) {
-	columnsWithValuesInCells := [][]string{}
+	columnsWithValuesInCells := make([][]string, 0, len(body.ColumnsData))
 
 	for i, columnData := range body.ColumnsData {
 		isLastColumn := i == len(body.ColumnsData)-1
-		cellsOfColumn := []string{}
+		capacity := body.RowsCount + 1
+		cellsOfColumn := make([]string, 0, capacity)
 		incrementFn := custom_utils.AutoIncrement(1)
 
 		for rowNumber := range body.RowsCount {
@@ -107,7 +108,7 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 }
 
 func (srv *TextContentCreator) createCellsForColumnsAsync(body types_module.DownloadTextReqBody) ([][]string, error) {
-	columnsWithValuesInCells := make([][]string, len(body.ColumnsData))
+	columnsWithValuesInCells := make([][]string, 0, len(body.ColumnsData))
 	errorsChan := make(chan error, len(body.ColumnsData)*body.RowsCount)
 	var wg sync.WaitGroup
 

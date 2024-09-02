@@ -1,7 +1,6 @@
 package downloader_module
 
 import (
-	"fmt"
 	"net/http"
 
 	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
@@ -20,9 +19,8 @@ func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req
 		api_module.FailResponse(w, err.Error(), err.Status())
 		return
 	}
-	fmt.Println("AFTER_VALIDATION ===> ", err)
 
-	file, e := m.downloaderSrv.CreateTempFileWithContent(body, m.contentCreators[sql_constants.RAW_TEXT], true)
+	file, e := m.downloaderSrv.CreateTempFileWithContent(body, m.contentCreators[sql_constants.RAW_TEXT], false)
 	if e != nil {
 		api_module.FailResponse(w, e.Error(), 400)
 	}
@@ -34,7 +32,6 @@ func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req
 
 func (m *DownloaderModule) _downloadSqlFileController(w http.ResponseWriter, req *http.Request) {
 	body, err := api_module.ParseReqBody[types_module.DownloadSqlReqBody](w, req)
-	fmt.Println("BODY =====> ", body)
 	if err != nil {
 		api_module.FailResponse(w, err.Error(), err.Status())
 		return
