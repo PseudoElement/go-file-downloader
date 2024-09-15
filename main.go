@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	downloader_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader"
+	games_module "github.com/pseudoelement/go-file-downloader/src/modules/games"
 	healthcheck_module "github.com/pseudoelement/go-file-downloader/src/modules/healthcheck"
 	"github.com/rs/cors"
 )
@@ -17,9 +18,11 @@ func main() {
 
 	healthModule := healthcheck_module.NewModule(api)
 	downloaderModule := downloader_module.NewModule(api)
+	gamesModule := games_module.NewModule(api)
 
 	healthModule.SetRoutes()
 	downloaderModule.SetRoutes()
+	gamesModule.SetRoutes()
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
