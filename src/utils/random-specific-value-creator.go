@@ -63,7 +63,7 @@ func CreateRandomWork(min int, max int) string {
 
 func setDefaultMinMaxIfZeros(min int, max int) (int, int) {
 	if min == 0 {
-		min = 5
+		min = 1
 	}
 	if max == 0 {
 		max = 20

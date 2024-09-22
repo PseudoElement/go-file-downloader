@@ -20,6 +20,6 @@ func (m *GamesModule) _downloadGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dirName, _ := os.Getwd()
-	path := fmt.Sprintf("%s/src/modules/games/static/%s.exe", dirName, gameId)
+	path := fmt.Sprintf("%s/src/modules/games/static/%s.zip", dirName, gameId)
 	http.ServeFile(w, r, path)
 }
