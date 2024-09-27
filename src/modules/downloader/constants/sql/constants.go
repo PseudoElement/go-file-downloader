@@ -10,6 +10,7 @@ const (
 	COUNTRY        = "COUNTRY"
 	CAR            = "CAR"
 	WORK           = "WORK"
+	DATE           = "DATE"
 )
 
 const (

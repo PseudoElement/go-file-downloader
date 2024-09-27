@@ -23,9 +23,9 @@ type TextColumnInfo struct {
 	/* 'BOOL' or 'NUMBER' or 'STRING' or 'AUTO_INCREMENT' */
 	Type string `json:"type"`
 	// from 0 to 100%
-	NullValuesPercent int `json:"null_values_percent"`
-	Min               int `json:"min"`
-	Max               int `json:"max"`
+	NullValuesPercent int   `json:"null_values_percent"`
+	Min               int64 `json:"min"`
+	Max               int64 `json:"max"`
 }
 
 type SqlColumnInfo struct {
@@ -35,8 +35,8 @@ type SqlColumnInfo struct {
 	NullValuesPercent int            `json:"null_values_percent"`
 	IsPrimaryKey      bool           `json:"is_primary_key"`
 	ForeignKeyData    ForeignKeyData `json:"foreign_key_data"`
-	Min               int            `json:"min"`
-	Max               int            `json:"max"`
+	Min               int64          `json:"min"`
+	Max               int64          `json:"max"`
 }
 
 type ForeignKeyData struct {

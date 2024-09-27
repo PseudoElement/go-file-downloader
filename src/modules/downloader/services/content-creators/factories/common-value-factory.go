@@ -13,7 +13,7 @@ func CommonRandomValueFactory(params services_models.RandomValueCreatorParams) (
 	var value string
 	switch params.ValueType {
 	case sql_constants.NUMBER:
-		value = strconv.Itoa(custom_utils.CreateRandomNumber(params.Min, params.Max))
+		value = strconv.Itoa(int(custom_utils.CreateRandomNumber(params.Min, params.Max)))
 	case sql_constants.CAR:
 		value = custom_utils.CreateRandomCarName(params.Min, params.Max)
 	case sql_constants.FIRST_NAME:
@@ -31,6 +31,8 @@ func CommonRandomValueFactory(params services_models.RandomValueCreatorParams) (
 			return "", fmt.Errorf("[TextContentCreator] params.incrementFn can't be empty!")
 		}
 		value = strconv.Itoa(params.IncrementFn())
+	case sql_constants.DATE:
+		value = custom_utils.CreateRandomDate(params.Min, params.Max)
 	default:
 		value = "unknown"
 	}

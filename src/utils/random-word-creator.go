@@ -10,7 +10,7 @@ const (
 	possibleLetters = "bcdfghjklmnpqrstvwxyzaeiou"
 )
 
-func CreateRandomWord(minLength int, maxLength int, startUpperCase bool) string {
+func CreateRandomWord(minLength int64, maxLength int64, startUpperCase bool) string {
 	var str = ""
 	randomLength := CreateRandomNumber(minLength, maxLength)
 

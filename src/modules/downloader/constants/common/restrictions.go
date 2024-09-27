@@ -10,7 +10,7 @@ type ColumnRestriction struct {
 var RESTRICTIONS_BY_COLUMN_TYPE = map[string]ColumnRestriction{
 	sql_constants.FIRST_NAME: ColumnRestriction{
 		MaximumMin: 10,
-		MinimalMax: 15,
+		MinimalMax: 11,
 	},
 	sql_constants.LAST_NAME: ColumnRestriction{
 		MaximumMin: 7,
@@ -20,6 +20,6 @@ var RESTRICTIONS_BY_COLUMN_TYPE = map[string]ColumnRestriction{
 	},
 	sql_constants.COUNTRY: ColumnRestriction{
 		MaximumMin: 10,
-		MinimalMax: 15,
+		MinimalMax: 11,
 	},
 }

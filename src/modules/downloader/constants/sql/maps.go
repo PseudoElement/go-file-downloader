@@ -9,4 +9,5 @@ var VALUE_TYPE_TO_SQL_TYPE = map[string]string{
 	LAST_NAME:      "TEXT",
 	COUNTRY:        "TEXT",
 	CAR:            "TEXT",
+	DATE:           "DATE",
 }

@@ -2,6 +2,7 @@ package content_creators
 
 import (
 	"fmt"
+	"math/rand"
 	"sync"
 
 	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
@@ -143,6 +144,10 @@ func (srv *SqlContentCreator) addInsertRowQuery(columnsData []types_module.SqlCo
 	var columnNames string
 
 	for i, column := range columnsData {
+		if isNullValue := column.NullValuesPercent > rand.Intn(100); isNullValue {
+			continue
+		}
+
 		value, err := srv.createRandomValue(services_models.RandomValueCreatorParams{
 			ValueType:   column.Type,
 			Min:         column.Min,
@@ -153,12 +158,12 @@ func (srv *SqlContentCreator) addInsertRowQuery(columnsData []types_module.SqlCo
 			return "", err
 		}
 
-		if i == len(columnsData)-1 {
+		if i == 0 {
 			values += value
 			columnNames += column.Name
 		} else {
-			values += value + ", "
-			columnNames += column.Name + ", "
+			values += ", " + value
+			columnNames += ", " + column.Name
 		}
 	}
 
