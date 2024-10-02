@@ -3,6 +3,7 @@ package content_creators
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"sync"
 
 	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
@@ -110,7 +111,7 @@ func (srv *SqlContentCreator) CreateFileContentAsync(body interface{}) (string, 
 func (srv *SqlContentCreator) addTableCreationQuery(body types_module.DownloadSqlReqBody) (string, error) {
 	firstRow := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s", body.TableName)
 	var columns string
-	for _, column := range body.ColumnsData {
+	for i, column := range body.ColumnsData {
 		value := column.Name
 		typeValue, ok := sql_constants.VALUE_TYPE_TO_SQL_TYPE[column.Type]
 		if !ok {
@@ -130,7 +131,10 @@ func (srv *SqlContentCreator) addTableCreationQuery(body types_module.DownloadSq
 			value += fmt.Sprintf(" REFERENCES %s (%s)", column.ForeignKeyData.RefTableName, column.ForeignKeyData.RefColumnName)
 		}
 
-		value += ",\n"
+		if isLastColumn := i == len(body.ColumnsData)-1; !isLastColumn {
+			value += ",\n"
+		}
+
 		columns += value
 	}
 
@@ -140,10 +144,10 @@ func (srv *SqlContentCreator) addTableCreationQuery(body types_module.DownloadSq
 }
 
 func (srv *SqlContentCreator) addInsertRowQuery(columnsData []types_module.SqlColumnInfo, tableName string, incrementFns map[string]func() int) (string, error) {
-	var values string
-	var columnNames string
+	values := make([]string, 0, len(columnsData))
+	columnNames := make([]string, 0, len(columnsData))
 
-	for i, column := range columnsData {
+	for _, column := range columnsData {
 		if isNullValue := column.NullValuesPercent > rand.Intn(100); isNullValue {
 			continue
 		}
@@ -158,17 +162,15 @@ func (srv *SqlContentCreator) addInsertRowQuery(columnsData []types_module.SqlCo
 			return "", err
 		}
 
-		if i == 0 {
-			values += value
-			columnNames += column.Name
-		} else {
-			values += ", " + value
-			columnNames += ", " + column.Name
-		}
+		values = append(values, value)
+		columnNames = append(columnNames, column.Name)
 	}
 
+	valuesString := strings.Join(values, ", ")
+	columnNamesString := strings.Join(columnNames, ", ")
+
 	insertRowQuery := fmt.Sprintf(`INSERT INTO %s (%s)
-VALUES (%s);`, tableName, columnNames, values)
+VALUES (%s);`, tableName, columnNamesString, valuesString)
 
 	return insertRowQuery, nil
 }

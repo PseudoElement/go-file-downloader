@@ -5,8 +5,6 @@ import (
 	"reflect"
 
 	app_errors "github.com/pseudoelement/go-file-downloader/src/errors"
-	common_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/common"
-	downloader_errors "github.com/pseudoelement/go-file-downloader/src/modules/downloader/errors"
 	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
 	errors_module "github.com/pseudoelement/golang-utils/src/errors"
@@ -55,7 +53,7 @@ func (srv *DownloaderService) ValidateColumnParams(body interface{}) errors_modu
 	for i := 0; i < columnsDataField.Len(); i++ {
 		column := columnsDataField.Index(i)
 
-		typeField := column.FieldByName("Type")
+		// typeField := column.FieldByName("Type")
 		minField := column.FieldByName("Min")
 		maxField := column.FieldByName("Max")
 
@@ -63,7 +61,7 @@ func (srv *DownloaderService) ValidateColumnParams(body interface{}) errors_modu
 			continue
 		}
 
-		columnType := typeField.String()
+		// columnType := typeField.String()
 		minValue := int(minField.Int())
 		maxValue := int(maxField.Int())
 
@@ -73,16 +71,7 @@ func (srv *DownloaderService) ValidateColumnParams(body interface{}) errors_modu
 		if !maxField.IsZero() && maxValue < 5 {
 			return &app_errors.ApiError{Message: "too short max value"}
 		}
-		restrictions, ok := common_constants.RESTRICTIONS_BY_COLUMN_TYPE[columnType]
-		if !ok {
-			continue
-		}
-		if restrictions.MaximumMin < minValue {
-			return downloader_errors.InvalidMinParam(columnType, restrictions.MaximumMin)
-		}
-		if restrictions.MinimalMax > maxValue {
-			return downloader_errors.InvalidMaxParam(columnType, restrictions.MinimalMax)
-		}
+
 	}
 
 	return nil

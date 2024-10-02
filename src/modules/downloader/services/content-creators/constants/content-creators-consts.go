@@ -10,4 +10,5 @@ var TEXTLIKE_VALUE_TYPES = []string{
 	sql_constants.LAST_NAME,
 	sql_constants.WORK,
 	sql_constants.DATE,
+	sql_constants.BOOL,
 }

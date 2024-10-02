@@ -66,7 +66,7 @@ func setDefaultMinMaxIfZeros(min int64, max int64) (int64, int64) {
 		min = 1
 	}
 	if max == 0 {
-		max = 20
+		max = 30
 	}
 	return min, max
 }
