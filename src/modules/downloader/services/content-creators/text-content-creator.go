@@ -1,6 +1,7 @@
 package content_creators
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"math/rand"
@@ -13,17 +14,22 @@ import (
 	services_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/models"
 	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
+	"github.com/pseudoelement/go-file-downloader/src/utils/logger"
 )
 
 type TextContentCreator struct {
-	mu sync.Mutex
+	mu     sync.Mutex
+	logger logger.Logger
 }
 
-func NewTextContentCreator() *TextContentCreator {
-	return &TextContentCreator{}
+func NewTextContentCreator(logger logger.Logger) *TextContentCreator {
+	return &TextContentCreator{
+		logger: logger,
+	}
 }
 
 func (srv *TextContentCreator) CreateFileContent(body interface{}) (string, error) {
+	srv.logger.AddLog("CreateFileContent", "Start!")
 	textBody, ok := body.(types_module.DownloadTextReqBody)
 	if !ok {
 		return "", fmt.Errorf("[TextContentCreator] invalid body type")
@@ -36,10 +42,14 @@ func (srv *TextContentCreator) CreateFileContent(body interface{}) (string, erro
 	}
 	fileContent := srv.concatAllCellsInTable(columnsWithValuesInCells, rowsCountWithHeader, len(textBody.ColumnsData))
 
+	srv.logger.AddLog("CreateFileContent", "End!")
+	srv.logger.ShowLogs("CreateFileContent")
+
 	return fileContent, nil
 }
 
 func (srv *TextContentCreator) CreateFileContentAsync(body interface{}) (string, error) {
+	srv.logger.AddLog("CreateFileContentAsync", "Start!")
 	textBody, ok := body.(types_module.DownloadTextReqBody)
 	if !ok {
 		return "", fmt.Errorf("[TextContentCreator] invalid body type")
@@ -52,20 +62,23 @@ func (srv *TextContentCreator) CreateFileContentAsync(body interface{}) (string,
 	}
 	fileContent := srv.concatAllCellsInTable(columnsWithValuesInCells, rowsCountWithHeader, len(textBody.ColumnsData))
 
+	srv.logger.AddLog("CreateFileContentAsync", "End!")
+	srv.logger.ShowLogs("CreateFileContentAsync")
+
 	return fileContent, nil
 }
 
 func (srv *TextContentCreator) concatAllCellsInTable(columnsWithFullCells [][]string, rowsCountWithHeader int, columnsCount int) string {
-	var fileContent string
+	contentBuffer := new(bytes.Buffer)
 	for rowNumber := range rowsCountWithHeader {
-		var row string
+		rowBuffer := new(bytes.Buffer)
 		for columnNumber := 0; columnNumber < columnsCount; columnNumber++ {
-			row += columnsWithFullCells[columnNumber][rowNumber]
+			rowBuffer.WriteString(columnsWithFullCells[columnNumber][rowNumber])
 		}
-		fileContent += row
+		contentBuffer.WriteString(rowBuffer.String())
 	}
 
-	return fileContent
+	return contentBuffer.String()
 }
 
 func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadTextReqBody) ([][]string, error) {
@@ -79,8 +92,9 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 
 		for rowNumber := range body.RowsCount {
 			if rowNumber == 0 {
-				header := srv.addSpaceOrParagraphToValue(columnData.Name, isLastColumn, columnData)
-				cellsOfColumn = append(cellsOfColumn, header)
+				headerBuffer := bytes.NewBufferString(columnData.Name)
+				srv.addSpaceOrParagraphToValue(headerBuffer, isLastColumn, columnData)
+				cellsOfColumn = append(cellsOfColumn, headerBuffer.String())
 			}
 
 			value, err := srv.createRandomValue(services_models.RandomValueCreatorParams{
@@ -89,16 +103,19 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 				Max:         columnData.Max,
 				IncrementFn: incrementFn,
 			})
+			valueBuffer := bytes.NewBufferString(value)
+
 			if err != nil {
 				return nil, err
 			}
 
 			if isNullValue := columnData.NullValuesPercent > rand.Intn(100); isNullValue {
-				value = "null"
+				valueBuffer.Reset()
+				valueBuffer.WriteString("null")
 			}
 
-			value = srv.addSpaceOrParagraphToValue(value, isLastColumn, columnData)
-			cellsOfColumn = append(cellsOfColumn, value)
+			srv.addSpaceOrParagraphToValue(valueBuffer, isLastColumn, columnData)
+			cellsOfColumn = append(cellsOfColumn, valueBuffer.String())
 		}
 
 		columnsWithValuesInCells = append(columnsWithValuesInCells, cellsOfColumn)
@@ -122,9 +139,9 @@ func (srv *TextContentCreator) createCellsForColumnsAsync(body types_module.Down
 
 			for rowNumber := range body.RowsCount {
 				if rowNumber == 0 {
-					header := srv.addSpaceOrParagraphToValue(columnData.Name, isLastColumn, columnData)
-					// NECESSARY ASSIGN VALUE BY INDEX USING GO CONCURENCY
-					cellsOfColumn[rowNumber] = header
+					headerBuffer := bytes.NewBufferString(columnData.Name)
+					srv.addSpaceOrParagraphToValue(headerBuffer, isLastColumn, columnData)
+					cellsOfColumn[rowNumber] = headerBuffer.String()
 				}
 
 				value, err := srv.createRandomValue(services_models.RandomValueCreatorParams{
@@ -133,16 +150,20 @@ func (srv *TextContentCreator) createCellsForColumnsAsync(body types_module.Down
 					Max:         columnData.Max,
 					IncrementFn: incrementFn,
 				})
+				valueBuffer := bytes.NewBufferString(value)
+
 				if err != nil {
 					errorsChan <- err
 					continue
 				}
 				if isNullValue := columnData.NullValuesPercent > rand.Intn(100); isNullValue {
-					value = "null"
+					valueBuffer.Reset()
+					valueBuffer.WriteString("null")
 				}
 
-				value = srv.addSpaceOrParagraphToValue(value, isLastColumn, columnData)
-				cellsOfColumn[rowNumber+1] = value
+				srv.addSpaceOrParagraphToValue(valueBuffer, isLastColumn, columnData)
+
+				cellsOfColumn[rowNumber+1] = valueBuffer.String()
 			}
 
 			columnsWithValuesInCells[ind] = cellsOfColumn
@@ -161,27 +182,27 @@ func (srv *TextContentCreator) createCellsForColumnsAsync(body types_module.Down
 	return columnsWithValuesInCells, nil
 }
 
-func (srv *TextContentCreator) addSpaceOrParagraphToValue(value string, isLastColumn bool, columnData types_module.TextColumnInfo) string {
+func (srv *TextContentCreator) addSpaceOrParagraphToValue(valueBuffer *bytes.Buffer, isLastColumn bool, columnData types_module.TextColumnInfo) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println("Recovered. Error:\n", r)
-			fmt.Println("Recovered value ===> ", value)
+			fmt.Println("Recovered value ===> ", valueBuffer.String())
 		}
 	}()
 
-	isHeader := value == columnData.Name
+	isHeader := valueBuffer.String() == columnData.Name
 
 	if isHeader && isLastColumn {
-		value += "\n\n"
+		valueBuffer.WriteString("\n\n")
 	} else if isLastColumn {
-		value += "\n"
+		valueBuffer.WriteString("\n")
 	} else {
 		max := math.Max(float64(len(columnData.Name)), float64(columnData.Max))
 		columnWidth := math.Max(max, 5)
-		spaces := strings.Repeat(" ", int(columnWidth)-len(value)+2)
-		value += spaces
+		valueLen := len(valueBuffer.String())
+		spaces := strings.Repeat(" ", int(columnWidth)-valueLen+2)
+		valueBuffer.WriteString(spaces)
 	}
-	return value
 }
 
 func (srv *TextContentCreator) createRandomValue(params services_models.RandomValueCreatorParams) (string, error) {

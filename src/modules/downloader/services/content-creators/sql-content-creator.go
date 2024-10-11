@@ -1,6 +1,7 @@
 package content_creators
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -12,16 +13,20 @@ import (
 	services_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/models"
 	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
+	"github.com/pseudoelement/go-file-downloader/src/utils/logger"
 	sql_utils "github.com/pseudoelement/go-file-downloader/src/utils/sql-utils"
 	slice_utils_module "github.com/pseudoelement/golang-utils/src/utils/slices"
 )
 
 type SqlContentCreator struct {
-	mu sync.Mutex
+	mu     sync.Mutex
+	logger logger.Logger
 }
 
-func NewSqlContentCreator() *SqlContentCreator {
-	return &SqlContentCreator{}
+func NewSqlContentCreator(logger logger.Logger) *SqlContentCreator {
+	return &SqlContentCreator{
+		logger: logger,
+	}
 }
 
 func (srv *SqlContentCreator) CreateFileContent(body interface{}) (string, error) {
@@ -29,14 +34,15 @@ func (srv *SqlContentCreator) CreateFileContent(body interface{}) (string, error
 	if !ok {
 		return "", fmt.Errorf("[SqlContentCreator] Invalid body type")
 	}
-	var sqlFileContent string
+
+	contentBuffer := new(bytes.Buffer)
 
 	if sqlBody.NeedCreateTable {
 		createTableQuery, err := srv.addTableCreationQuery(sqlBody)
 		if err != nil {
 			return "", err
 		}
-		sqlFileContent += createTableQuery
+		contentBuffer.WriteString(createTableQuery)
 	}
 
 	incrementFns := make(map[string]func() int)
@@ -51,25 +57,29 @@ func (srv *SqlContentCreator) CreateFileContent(body interface{}) (string, error
 		if err != nil {
 			return "", err
 		}
-		sqlFileContent += row + "\n\n"
+
+		rowWithParagraph := row + "\n\n"
+		contentBuffer.WriteString(rowWithParagraph)
 	}
 
-	return sqlFileContent, nil
+	return contentBuffer.String(), nil
 }
 
 func (srv *SqlContentCreator) CreateFileContentAsync(body interface{}) (string, error) {
+	srv.logger.AddLog("CreateFileContentAsync", "Start")
 	sqlBody, ok := body.(types_module.DownloadSqlReqBody)
 	if !ok {
 		return "", fmt.Errorf("[SqlContentCreator] Invalid body type")
 	}
-	var sqlFileContent string
+
+	contentBuffer := new(bytes.Buffer)
 
 	if sqlBody.NeedCreateTable {
 		createTableQuery, err := srv.addTableCreationQuery(sqlBody)
 		if err != nil {
 			return "", err
 		}
-		sqlFileContent += createTableQuery
+		contentBuffer.WriteString(createTableQuery)
 	}
 
 	incrementFns := make(map[string]func() int)
@@ -89,11 +99,13 @@ func (srv *SqlContentCreator) CreateFileContentAsync(body interface{}) (string, 
 			isLast := index == sqlBody.RowsCount-1
 
 			row, err := srv.addInsertRowQuery(sqlBody.ColumnsData, sqlBody.TableName, incrementFns)
-			sqlFileContent += row + "\n\n"
-
 			if err != nil {
 				errorChan <- err
 			}
+
+			rowWithParagraph := row + "\n\n"
+			contentBuffer.WriteString(rowWithParagraph)
+
 			if isLast {
 				doneChan <- true
 			}
@@ -104,7 +116,9 @@ func (srv *SqlContentCreator) CreateFileContentAsync(body interface{}) (string, 
 	case err := <-errorChan:
 		return "", err
 	case <-doneChan:
-		return sqlFileContent, nil
+		srv.logger.AddLog("CreateFileContentAsync", "Completed!")
+		srv.logger.ShowLogs("CreateFileContentAsync")
+		return contentBuffer.String(), nil
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 	downloader_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader"
 	games_module "github.com/pseudoelement/go-file-downloader/src/modules/games"
 	healthcheck_module "github.com/pseudoelement/go-file-downloader/src/modules/healthcheck"
+	"github.com/pseudoelement/go-file-downloader/src/utils/logger"
 	"github.com/rs/cors"
 )
 
@@ -16,8 +17,10 @@ func main() {
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()
 
+	logger := logger.NewLogger()
+
 	healthModule := healthcheck_module.NewModule(api)
-	downloaderModule := downloader_module.NewModule(api)
+	downloaderModule := downloader_module.NewModule(api, logger)
 	gamesModule := games_module.NewModule(api)
 
 	healthModule.SetRoutes()

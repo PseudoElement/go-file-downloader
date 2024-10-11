@@ -2,7 +2,7 @@ package mock_constants
 
 import types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 
-var ROWS_COUNT = 20_000
+var ROWS_COUNT = 5
 
 var MOCK_SQL_COLUMNS_DATA = []types_module.SqlColumnInfo{
 	types_module.SqlColumnInfo{
