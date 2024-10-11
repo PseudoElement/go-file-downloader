@@ -10,7 +10,7 @@ import (
 	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
 	content_creator_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/constants"
 	random_value_factory "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/factories"
-	services_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/models"
+	ccr_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/models"
 	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
 	"github.com/pseudoelement/go-file-downloader/src/utils/logger"
@@ -166,7 +166,7 @@ func (srv *SqlContentCreator) addInsertRowQuery(columnsData []types_module.SqlCo
 			continue
 		}
 
-		value, err := srv.createRandomValue(services_models.RandomValueCreatorParams{
+		value, err := srv.createRandomValue(ccr_models.RandomValueCreatorParams{
 			ValueType:   column.Type,
 			Min:         column.Min,
 			Max:         column.Max,
@@ -189,7 +189,7 @@ VALUES (%s);`, tableName, columnNamesString, valuesString)
 	return insertRowQuery, nil
 }
 
-func (srv *SqlContentCreator) createRandomValue(params services_models.RandomValueCreatorParams) (string, error) {
+func (srv *SqlContentCreator) createRandomValue(params ccr_models.RandomValueCreatorParams) (string, error) {
 	var value string
 	if params.ValueType == sql_constants.BOOL {
 		value = string(custom_utils.CreateRandomByteForSql())

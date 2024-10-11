@@ -1,4 +1,4 @@
-package services_models
+package ccr_models
 
 type RandomValueCreatorParams struct {
 	/* from sql_constants BOOL/STRING/NUMBER/AUTO_INCREMENT/FIRST_NAME/LAST_NAME/COUNTRY/CAR/WORK/DATE */

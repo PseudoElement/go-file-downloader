@@ -11,7 +11,7 @@ import (
 
 	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
 	random_value_factory "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/factories"
-	services_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/models"
+	ccr_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/models"
 	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
 	"github.com/pseudoelement/go-file-downloader/src/utils/logger"
@@ -97,7 +97,7 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 				cellsOfColumn = append(cellsOfColumn, headerBuffer.String())
 			}
 
-			value, err := srv.createRandomValue(services_models.RandomValueCreatorParams{
+			value, err := srv.createRandomValue(ccr_models.RandomValueCreatorParams{
 				ValueType:   columnData.Type,
 				Min:         columnData.Min,
 				Max:         columnData.Max,
@@ -144,7 +144,7 @@ func (srv *TextContentCreator) createCellsForColumnsAsync(body types_module.Down
 					cellsOfColumn[rowNumber] = headerBuffer.String()
 				}
 
-				value, err := srv.createRandomValue(services_models.RandomValueCreatorParams{
+				value, err := srv.createRandomValue(ccr_models.RandomValueCreatorParams{
 					ValueType:   columnData.Type,
 					Min:         columnData.Min,
 					Max:         columnData.Max,
@@ -205,7 +205,7 @@ func (srv *TextContentCreator) addSpaceOrParagraphToValue(valueBuffer *bytes.Buf
 	}
 }
 
-func (srv *TextContentCreator) createRandomValue(params services_models.RandomValueCreatorParams) (string, error) {
+func (srv *TextContentCreator) createRandomValue(params ccr_models.RandomValueCreatorParams) (string, error) {
 	var value string
 	if params.ValueType == sql_constants.BOOL {
 		value = strconv.FormatBool(custom_utils.CreateRandomBool())

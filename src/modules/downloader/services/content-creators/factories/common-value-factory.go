@@ -5,11 +5,11 @@ import (
 	"strconv"
 
 	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
-	services_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/models"
+	ccr_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/models"
 	custom_utils "github.com/pseudoelement/go-file-downloader/src/utils"
 )
 
-func CommonRandomValueFactory(params services_models.RandomValueCreatorParams) (string, error) {
+func CommonRandomValueFactory(params ccr_models.RandomValueCreatorParams) (string, error) {
 	var value string
 	switch params.ValueType {
 	case sql_constants.NUMBER:

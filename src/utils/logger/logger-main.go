@@ -50,7 +50,7 @@ func (l *Logger) ShowLogs(funcName string) {
 			}
 		}
 
-		totalTime := logs[len(logs)-1].timestamp - logs[0].timestamp
+		totalTime := time.Now().UnixMilli() - logs[0].timestamp
 
 		log.Printf("Total time - %v ms.\n", totalTime)
 		log.Printf("===================END_%v===================\n\n\n", funcName)
