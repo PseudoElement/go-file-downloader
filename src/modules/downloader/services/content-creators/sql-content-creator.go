@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
-	content_creator_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/constants"
+	ccr_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/constants"
 	random_value_factory "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/factories"
 	ccr_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/models"
 	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
@@ -30,6 +30,7 @@ func NewSqlContentCreator(logger logger.Logger) *SqlContentCreator {
 }
 
 func (srv *SqlContentCreator) CreateFileContent(body interface{}) (string, error) {
+	srv.logger.AddLog("SQL_CreateFileContent", "Start!")
 	sqlBody, ok := body.(types_module.DownloadSqlReqBody)
 	if !ok {
 		return "", fmt.Errorf("[SqlContentCreator] Invalid body type")
@@ -61,12 +62,13 @@ func (srv *SqlContentCreator) CreateFileContent(body interface{}) (string, error
 		rowWithParagraph := row + "\n\n"
 		contentBuffer.WriteString(rowWithParagraph)
 	}
+	srv.logger.ShowLogs("SQL_CreateFileContent")
 
 	return contentBuffer.String(), nil
 }
 
 func (srv *SqlContentCreator) CreateFileContentAsync(body interface{}) (string, error) {
-	srv.logger.AddLog("CreateFileContentAsync", "Start")
+	srv.logger.AddLog("SQL_CreateFileContentAsync", "Start")
 	sqlBody, ok := body.(types_module.DownloadSqlReqBody)
 	if !ok {
 		return "", fmt.Errorf("[SqlContentCreator] Invalid body type")
@@ -116,8 +118,7 @@ func (srv *SqlContentCreator) CreateFileContentAsync(body interface{}) (string, 
 	case err := <-errorChan:
 		return "", err
 	case <-doneChan:
-		srv.logger.AddLog("CreateFileContentAsync", "Completed!")
-		srv.logger.ShowLogs("CreateFileContentAsync")
+		srv.logger.ShowLogs("SQL_CreateFileContentAsync")
 		return contentBuffer.String(), nil
 	}
 }
@@ -201,7 +202,7 @@ func (srv *SqlContentCreator) createRandomValue(params ccr_models.RandomValueCre
 		}
 	}
 
-	if slice_utils_module.Contains(content_creator_constants.TEXTLIKE_VALUE_TYPES, params.ValueType) {
+	if slice_utils_module.Contains(ccr_constants.TEXTLIKE_VALUE_TYPES, params.ValueType) {
 		value = sql_utils.WrapStringInSingleQuotes(value)
 	}
 

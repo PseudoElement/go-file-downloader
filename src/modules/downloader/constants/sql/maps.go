@@ -10,4 +10,5 @@ var VALUE_TYPE_TO_SQL_TYPE = map[string]string{
 	COUNTRY:        "TEXT",
 	CAR:            "TEXT",
 	DATE:           "DATE",
+	WORK:           "TEXT",
 }

@@ -20,7 +20,7 @@ func (m *DownloaderModule) _downloadTxtFileController(w http.ResponseWriter, req
 		return
 	}
 
-	file, e := m.downloaderSrv.CreateTempFileWithContent(body, m.contentCreators[sql_constants.RAW_TEXT], false)
+	file, e := m.downloaderSrv.CreateTempFileWithContent(body, m.contentCreators[sql_constants.RAW_TEXT], true)
 	if e != nil {
 		api_module.FailResponse(w, e.Error(), 400)
 	}

@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	downloader_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader"
 	games_module "github.com/pseudoelement/go-file-downloader/src/modules/games"
 	healthcheck_module "github.com/pseudoelement/go-file-downloader/src/modules/healthcheck"
@@ -13,9 +16,23 @@ import (
 	"github.com/rs/cors"
 )
 
+func getAllowedOrigins() []string {
+	origins := os.Getenv("ALLOWED_ORIGINS")
+	if origins == "" {
+		panic("Add ALLOWED_ORIGINS var in .env file!")
+	}
+
+	return strings.Split(origins, "__")
+}
+
 func main() {
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("err loading: %v", err)
+	}
 
 	logger := logger.NewLogger()
 
@@ -28,15 +45,22 @@ func main() {
 	gamesModule.SetRoutes()
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "OPTIONS", "PUT", "DELTE"},
-		AllowOriginFunc: func(origin string) bool {
-			return true
-		},
+		AllowedOrigins:     getAllowedOrigins(),
+		AllowedMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedHeaders:     []string{"Content-Type", "Bearer", "Accept", "Authorization"},
+		OptionsPassthrough: true,
+		// AllowOriginFunc: func(origin string) bool {
+		// 	fmt.Println("ORIGIN is ", origin)
+		// 	return origin == "http//:localhost:4200"
+		// },
 		AllowCredentials: true,
 		MaxAge:           10,
 		Debug:            true,
 	})
+	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
 	handler := c.Handler(r)
 
 	fmt.Println("Listening port :8080")

@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	sql_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/constants/sql"
+	ccr_constants "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/constants"
 	random_value_factory "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/factories"
 	ccr_models "github.com/pseudoelement/go-file-downloader/src/modules/downloader/services/content-creators/models"
 	types_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader/types"
@@ -29,7 +30,7 @@ func NewTextContentCreator(logger logger.Logger) *TextContentCreator {
 }
 
 func (srv *TextContentCreator) CreateFileContent(body interface{}) (string, error) {
-	srv.logger.AddLog("CreateFileContent", "Start!")
+	srv.logger.AddLog("TXT_CreateFileContent", "Start!")
 	textBody, ok := body.(types_module.DownloadTextReqBody)
 	if !ok {
 		return "", fmt.Errorf("[TextContentCreator] invalid body type")
@@ -42,14 +43,13 @@ func (srv *TextContentCreator) CreateFileContent(body interface{}) (string, erro
 	}
 	fileContent := srv.concatAllCellsInTable(columnsWithValuesInCells, rowsCountWithHeader, len(textBody.ColumnsData))
 
-	srv.logger.AddLog("CreateFileContent", "End!")
-	srv.logger.ShowLogs("CreateFileContent")
-
+	srv.logger.ShowLogs("TXT_CreateFileContent")
 	return fileContent, nil
 }
 
 func (srv *TextContentCreator) CreateFileContentAsync(body interface{}) (string, error) {
-	srv.logger.AddLog("CreateFileContentAsync", "Start!")
+	srv.logger.AddLog("TXT_CreateFileContentAsync", "Start!")
+
 	textBody, ok := body.(types_module.DownloadTextReqBody)
 	if !ok {
 		return "", fmt.Errorf("[TextContentCreator] invalid body type")
@@ -62,8 +62,7 @@ func (srv *TextContentCreator) CreateFileContentAsync(body interface{}) (string,
 	}
 	fileContent := srv.concatAllCellsInTable(columnsWithValuesInCells, rowsCountWithHeader, len(textBody.ColumnsData))
 
-	srv.logger.AddLog("CreateFileContentAsync", "End!")
-	srv.logger.ShowLogs("CreateFileContentAsync")
+	srv.logger.ShowLogs("TXT_CreateFileContentAsync")
 
 	return fileContent, nil
 }
@@ -91,16 +90,25 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 		incrementFn := custom_utils.AutoIncrement(1)
 
 		for rowNumber := range body.RowsCount {
+			min, max := srv.getDefaultMinMaxParams(columnData)
+			columnWithFixedMinMax := types_module.TextColumnInfo{
+				Name:              columnData.Name,
+				Type:              columnData.Type,
+				NullValuesPercent: columnData.NullValuesPercent,
+				Min:               min,
+				Max:               max,
+			}
+
 			if rowNumber == 0 {
 				headerBuffer := bytes.NewBufferString(columnData.Name)
-				srv.addSpaceOrParagraphToValue(headerBuffer, isLastColumn, columnData)
+				srv.addSpaceOrParagraphToValue(headerBuffer, isLastColumn, columnWithFixedMinMax)
 				cellsOfColumn = append(cellsOfColumn, headerBuffer.String())
 			}
 
 			value, err := srv.createRandomValue(ccr_models.RandomValueCreatorParams{
-				ValueType:   columnData.Type,
-				Min:         columnData.Min,
-				Max:         columnData.Max,
+				ValueType:   columnWithFixedMinMax.Type,
+				Min:         columnWithFixedMinMax.Min,
+				Max:         columnWithFixedMinMax.Max,
 				IncrementFn: incrementFn,
 			})
 			valueBuffer := bytes.NewBufferString(value)
@@ -114,7 +122,7 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 				valueBuffer.WriteString("null")
 			}
 
-			srv.addSpaceOrParagraphToValue(valueBuffer, isLastColumn, columnData)
+			srv.addSpaceOrParagraphToValue(valueBuffer, isLastColumn, columnWithFixedMinMax)
 			cellsOfColumn = append(cellsOfColumn, valueBuffer.String())
 		}
 
@@ -125,29 +133,40 @@ func (srv *TextContentCreator) createCellsForColumns(body types_module.DownloadT
 }
 
 func (srv *TextContentCreator) createCellsForColumnsAsync(body types_module.DownloadTextReqBody) ([][]string, error) {
-	columnsWithValuesInCells := make([][]string, 0, len(body.ColumnsData))
+	columns := make([][]string, len(body.ColumnsData), len(body.ColumnsData))
 	errorsChan := make(chan error, len(body.ColumnsData)*body.RowsCount)
+
 	var wg sync.WaitGroup
 
 	for i, column := range body.ColumnsData {
 		wg.Add(1)
 		go func(ind int, columnData types_module.TextColumnInfo) {
 			defer wg.Done()
+
 			isLastColumn := ind == len(body.ColumnsData)-1
-			cellsOfColumn := make([]string, body.RowsCount+1)
+			cellsOfColumn := make([]string, body.RowsCount+1, body.RowsCount+1)
 			incrementFn := custom_utils.AutoIncrement(1)
 
 			for rowNumber := range body.RowsCount {
+				min, max := srv.getDefaultMinMaxParams(columnData)
+				columnWithFixedMinMax := types_module.TextColumnInfo{
+					Name:              columnData.Name,
+					Type:              columnData.Type,
+					NullValuesPercent: columnData.NullValuesPercent,
+					Min:               min,
+					Max:               max,
+				}
+
 				if rowNumber == 0 {
 					headerBuffer := bytes.NewBufferString(columnData.Name)
-					srv.addSpaceOrParagraphToValue(headerBuffer, isLastColumn, columnData)
+					srv.addSpaceOrParagraphToValue(headerBuffer, isLastColumn, columnWithFixedMinMax)
 					cellsOfColumn[rowNumber] = headerBuffer.String()
 				}
 
 				value, err := srv.createRandomValue(ccr_models.RandomValueCreatorParams{
-					ValueType:   columnData.Type,
-					Min:         columnData.Min,
-					Max:         columnData.Max,
+					ValueType:   columnWithFixedMinMax.Type,
+					Min:         columnWithFixedMinMax.Min,
+					Max:         columnWithFixedMinMax.Max,
 					IncrementFn: incrementFn,
 				})
 				valueBuffer := bytes.NewBufferString(value)
@@ -161,12 +180,12 @@ func (srv *TextContentCreator) createCellsForColumnsAsync(body types_module.Down
 					valueBuffer.WriteString("null")
 				}
 
-				srv.addSpaceOrParagraphToValue(valueBuffer, isLastColumn, columnData)
+				srv.addSpaceOrParagraphToValue(valueBuffer, isLastColumn, columnWithFixedMinMax)
 
 				cellsOfColumn[rowNumber+1] = valueBuffer.String()
 			}
 
-			columnsWithValuesInCells[ind] = cellsOfColumn
+			columns[ind] = cellsOfColumn
 		}(i, column)
 
 	}
@@ -179,7 +198,7 @@ func (srv *TextContentCreator) createCellsForColumnsAsync(body types_module.Down
 		}
 	}
 
-	return columnsWithValuesInCells, nil
+	return columns, nil
 }
 
 func (srv *TextContentCreator) addSpaceOrParagraphToValue(valueBuffer *bytes.Buffer, isLastColumn bool, columnData types_module.TextColumnInfo) {
@@ -197,8 +216,14 @@ func (srv *TextContentCreator) addSpaceOrParagraphToValue(valueBuffer *bytes.Buf
 	} else if isLastColumn {
 		valueBuffer.WriteString("\n")
 	} else {
-		max := math.Max(float64(len(columnData.Name)), float64(columnData.Max))
-		columnWidth := math.Max(max, 5)
+		var columnWidth float64
+		if columnData.Type == sql_constants.NUMBER || columnData.Type == sql_constants.DATE {
+			// cause Min/Max can be over 1_000_000++
+			columnWidth = math.Max(float64(len(valueBuffer.String())), float64(len(columnData.Name)))
+			columnWidth = math.Max(float64(ccr_constants.VALUE_LENGTHS[columnData.Type]), columnWidth)
+		} else {
+			columnWidth = math.Max(float64(len(columnData.Name)), float64(columnData.Max))
+		}
 		valueLen := len(valueBuffer.String())
 		spaces := strings.Repeat(" ", int(columnWidth)-valueLen+2)
 		valueBuffer.WriteString(spaces)
@@ -218,6 +243,26 @@ func (srv *TextContentCreator) createRandomValue(params ccr_models.RandomValueCr
 	}
 
 	return value, nil
+}
+
+func (srv *TextContentCreator) getDefaultMinMaxParams(column types_module.TextColumnInfo) (int64, int64) {
+	var max int64 = column.Max
+	var min int64 = column.Min
+	if column.Max == 0 {
+		if column.Type == sql_constants.DATE {
+			max = 1727500009835
+		} else {
+			max = 20
+		}
+	}
+	if column.Min == 0 {
+		if column.Type == sql_constants.DATE {
+			min = 172000000983
+		} else {
+			min = 1
+		}
+	}
+	return min, max
 }
 
 var _ types_module.FileContentCreator = (*TextContentCreator)(nil)
