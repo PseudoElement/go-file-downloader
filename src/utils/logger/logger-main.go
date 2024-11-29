@@ -14,7 +14,7 @@ type Logger struct {
 	logsByFuncName map[string][]LogMsg
 }
 
-func NewLogger() Logger {
+func New() Logger {
 	return Logger{
 		logsByFuncName: make(map[string][]LogMsg),
 	}

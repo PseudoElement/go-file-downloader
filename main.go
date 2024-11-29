@@ -9,6 +9,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+	"github.com/pseudoelement/go-file-downloader/src/db/postgres"
 	downloader_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader"
 	games_module "github.com/pseudoelement/go-file-downloader/src/modules/games"
 	healthcheck_module "github.com/pseudoelement/go-file-downloader/src/modules/healthcheck"
@@ -34,7 +35,10 @@ func main() {
 		log.Fatalf("err loading: %v", err)
 	}
 
-	logger := logger.NewLogger()
+	logger := logger.New()
+	db := postgres.New()
+
+	db.Connect()
 
 	healthModule := healthcheck_module.NewModule(api)
 	downloaderModule := downloader_module.NewModule(api, logger)
@@ -50,8 +54,7 @@ func main() {
 		AllowedHeaders:     []string{"Content-Type", "Bearer", "Accept", "Authorization"},
 		OptionsPassthrough: true,
 		// AllowOriginFunc: func(origin string) bool {
-		// 	fmt.Println("ORIGIN is ", origin)
-		// 	return origin == "http//:localhost:4200"
+		// 	return true
 		// },
 		AllowCredentials: true,
 		MaxAge:           10,

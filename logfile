@@ -1,0 +1,5 @@
+2024-11-29 15:12:16.462 +03 [58428] FATAL:  lock file "postmaster.pid" already exists
+2024-11-29 15:12:16.462 +03 [58428] HINT:  Is another postmaster (PID 57108) running in data directory "/opt/homebrew/var/postgresql@14"?
+2024-11-29 15:20:03.925 +03 [60451] FATAL:  pre-existing shared memory block (key 40624174, ID 917504) is still in use
+2024-11-29 15:20:03.925 +03 [60451] HINT:  Terminate any old server processes associated with data directory "/opt/homebrew/var/postgresql@14".
+2024-11-29 15:20:03.925 +03 [60451] LOG:  database system is shut down
