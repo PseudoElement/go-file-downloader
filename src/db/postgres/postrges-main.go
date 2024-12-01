@@ -1,10 +1,10 @@
 package postgres
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 
-	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	db_interfaces "github.com/pseudoelement/go-file-downloader/src/db/db-interfaces"
 )
@@ -14,33 +14,45 @@ type PostgresDB struct {
 	dbName   string
 	password string
 	host     string
-	conn     *sqlx.DB
+	port     int32
+	conn     *sql.DB
 }
 
-func New() db_interfaces.Database[*sqlx.DB] {
+func New() db_interfaces.Database[*sql.DB] {
 	return &PostgresDB{
-		user:     "postgres",
-		dbName:   "downloader_db",
-		password: "password",
+		// user name of desktop, with docker it's `postgres`
+		user:     "paveldavidovich",
+		dbName:   "postgres",
+		password: "postgres",
 		host:     "localhost",
+		// host:     "postgres", with docker
+		port: 5432,
 	}
 }
 
 func (db *PostgresDB) Connect() error {
 	connData := fmt.Sprintf(
-		"user=%s dbname=%s sslmode=disable password=%s host=%s",
-		db.user,
-		db.dbName,
-		db.password,
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		db.host,
+		db.port,
+		db.user,
+		db.password,
+		db.dbName,
 	)
 
-	conn, err := sqlx.Connect("postgres", connData)
+	conn, err := sql.Open("postgres", connData)
+	if err != nil {
+		panic(err)
+	}
+
+	err = conn.Ping()
 	if err != nil {
 		panic(err)
 	}
 
 	db.conn = conn
+
+	db.createTestTableIfNotExists()
 
 	log.Println("PostgresDB successfully connected!")
 
@@ -52,8 +64,17 @@ func (db *PostgresDB) Disconnect() error {
 	return err
 }
 
-func (db *PostgresDB) Conn() *sqlx.DB {
+func (db *PostgresDB) Conn() *sql.DB {
 	return db.conn
 }
 
-var _ db_interfaces.Database[*sqlx.DB] = (*PostgresDB)(nil)
+func (db *PostgresDB) createTestTableIfNotExists() {
+	_, err := db.conn.Exec("CREATE TABLE IF NOT EXISTS test_table(last_name varchar(255), first_name varchar(255));")
+	if err != nil {
+		msg := fmt.Sprintf("Error creating test_table - %v", err)
+		panic(msg)
+	}
+	log.Println("Table created!")
+}
+
+var _ db_interfaces.Database[*sql.DB] = (*PostgresDB)(nil)
