@@ -1,1 +1,1 @@
-In directore where placed this app, should also add go-utils repository from https://github.com/PseudoElement/golang-utils
+In directory where placed this app, should also add go-utils repository from https://github.com/PseudoElement/golang-utils
