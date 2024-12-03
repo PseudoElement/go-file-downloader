@@ -74,7 +74,6 @@ func (db *PostgresDB) createTestTableIfNotExists() {
 		msg := fmt.Sprintf("Error creating test_table - %v", err)
 		panic(msg)
 	}
-	log.Println("Table created!")
 }
 
 var _ db_interfaces.Database[*sql.DB] = (*PostgresDB)(nil)

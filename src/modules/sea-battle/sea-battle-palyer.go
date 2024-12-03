@@ -14,30 +14,30 @@ import (
 )
 
 type Player struct {
-	email    string
-	isOwner  bool
-	roomName string
-	conn     *websocket.Conn
-	w        http.ResponseWriter
-	req      *http.Request
-	queries  seabattle_queries.SeaBattleQueries
+	email   string
+	isOwner bool
+	room    Room
+	conn    *websocket.Conn
+	w       http.ResponseWriter
+	req     *http.Request
+	queries seabattle_queries.SeaBattleQueries
 }
 
 func NewPlayer(
 	email string,
 	isOwner bool,
-	roomName string,
+	room Room,
 	w http.ResponseWriter,
 	req *http.Request,
 	queries seabattle_queries.SeaBattleQueries,
 ) Player {
 	return Player{
-		email:    email,
-		isOwner:  isOwner,
-		w:        w,
-		req:      req,
-		queries:  queries,
-		roomName: roomName,
+		email:   email,
+		isOwner: isOwner,
+		w:       w,
+		req:     req,
+		queries: queries,
+		room:    room,
 	}
 }
 
@@ -65,9 +65,13 @@ func (p *Player) Connect() error {
 	}
 
 	p.conn = conn
-	log.Printf("Client %s connected to %s.", p.email, p.roomName)
+	log.Printf("Client %s connected to %s.", p.email, p.room.name)
 
 	return nil
+}
+
+func (p *Player) Conn() *websocket.Conn {
+	return p.conn
 }
 
 func (p *Player) Disconnect() error {
@@ -76,7 +80,7 @@ func (p *Player) Disconnect() error {
 		return fmt.Errorf("Error in Player_Disconnect_Close. Err: %s", err.Error())
 	}
 
-	err = p.queries.DisconnectPlayerFromRoom(p.email, p.roomName)
+	err = p.queries.DisconnectPlayerFromRoom(p.email, p.room.name)
 	if err != nil {
 		return fmt.Errorf("Error in Player_Disconnect_DisconnectPlayerFromRoom. Err: %s", err.Error())
 	}
@@ -99,7 +103,10 @@ func (p *Player) Listen() {
 			log.Println("Listen_Unmarshal err: ", err)
 			return
 		}
-		p.handlePlayerAction(msgBody)
+		if err = p.handleNewMsg(msgBody); err != nil {
+			log.Println("Listen_handlePlayerAction err: ", err)
+			return
+		}
 
 		if err := p.conn.WriteMessage(messageType, bytesData); err != nil {
 			log.Println("Listen_WriteMessage err: ", err)
@@ -109,7 +116,7 @@ func (p *Player) Listen() {
 	}
 }
 
-func (p *Player) handlePlayerAction(msgBody any) error {
+func (p *Player) handleNewMsg(msgBody any) error {
 	switch val := msgBody.(type) {
 	case ConnectPlayerMsg:
 		if val.Type == CONNECT_PLAYER {
@@ -117,10 +124,58 @@ func (p *Player) handlePlayerAction(msgBody any) error {
 		} else {
 			return p.queries.DisconnectPlayerFromRoom(val.Email, val.RoomName)
 		}
+	case NewStepMsg:
+		return p.updatePositions(val.Email, val)
 	default:
 		return fmt.Errorf("Unknown msgBody type.")
 	}
 
+}
+
+func (p *Player) updatePositions(activePlayerEmail string, step NewStepMsg) error {
+	enemy, _ := slice_utils_module.Find(p.room.players, func(player Player) bool {
+		return player.email != activePlayerEmail
+	})
+
+	splitterBetweenPlayerNameAndPositions := fmt.Sprintf("%s - ", enemy.email)
+	splitterBetweenPlayers := fmt.Sprintf("__")
+
+	splitted := strings.Split(*p.room.positions, splitterBetweenPlayerNameAndPositions)[1]
+	enemyPositionsStr := strings.Split(splitted, splitterBetweenPlayers)[0]
+	enemyPositionsSlice := strings.Split(enemyPositionsStr, ",")
+
+	var newEnemyPositionsStr string
+	for _, position := range enemyPositionsSlice {
+		updated := position
+		if strings.HasPrefix(position, step.Cell) {
+			if strings.HasSuffix(position, "+") {
+				// strike cell with ship
+				updated += "*"
+			} else {
+				updated += "."
+			}
+		}
+		newEnemyPositionsStr += updated
+	}
+
+	err := p.queries.UpdatePositions(newEnemyPositionsStr)
+	if err != nil {
+		return err
+	}
+
+	for _, player := range p.room.players {
+		msg := NewStepMsgResp{
+			ActivePlayerEmail: activePlayerEmail,
+			EnemyPlayerEmail:  enemy.email,
+			Cell:              step.Cell,
+		}
+		err = player.Conn().WriteJSON(msg)
+		if err != nil {
+			log.Println("player.Conn().WriteJSON err: ", err.Error())
+		}
+	}
+
+	return nil
 }
 
 var _ PlayerSocket = (*Player)(nil)

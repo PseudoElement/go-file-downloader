@@ -20,6 +20,7 @@ func (q SeaBattleQueries) CreateRoomsTable() error {
 		CREATE TABLE IF NOT EXISTS seabattle_rooms (
 			id SERIAL NOT NULL PRIMARY KEY, 
             name TEXT,
+			positions TEXT,
             CONSTRAINT uc_room UNIQUE (id, name)
 		);
 	`)
@@ -46,9 +47,19 @@ func (q SeaBattleQueries) CreatePlayersTable() error {
 	return nil
 }
 
-func (q SeaBattleQueries) CreateRoom(name string) error {
-	query := fmt.Sprintf("INSERT INTO seabattle_rooms(name) VALUES($1);")
-	_, err := q.db.Exec(query, name)
+func (q SeaBattleQueries) CreateRoom(roomName string) error {
+	query := fmt.Sprintf("INSERT INTO seabattle_rooms(room_name) VALUES($1);")
+	_, err := q.db.Exec(query, roomName)
+	if err != nil {
+		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
+	}
+
+	return nil
+}
+
+func (q SeaBattleQueries) DeleteRoom(roomName string) error {
+	query := fmt.Sprintf("DELETE FROM seabattle_rooms(room_name) VALUES($1);")
+	_, err := q.db.Exec(query, roomName)
 	if err != nil {
 		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
 	}
@@ -71,6 +82,16 @@ func (q SeaBattleQueries) DisconnectPlayerFromRoom(email string, roomName string
 	_, err := q.db.Exec(query, email, roomName)
 	if err != nil {
 		return fmt.Errorf("Error in DisconnectPlayerFromRoom. Error: %s", err.Error())
+	}
+
+	return nil
+}
+
+func (q SeaBattleQueries) UpdatePositions(newPositions string) error {
+	query := fmt.Sprintf("INSERT INTO seabattle_rooms(positions) VALUES($1);")
+	_, err := q.db.Exec(query, newPositions)
+	if err != nil {
+		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
 	}
 
 	return nil

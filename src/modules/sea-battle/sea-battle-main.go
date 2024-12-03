@@ -8,9 +8,10 @@ import (
 )
 
 type Room struct {
-	id      string
-	name    string
-	players []Player
+	id        string
+	name      string
+	positions *string
+	players   []Player
 }
 
 type SeaBattleModule struct {
