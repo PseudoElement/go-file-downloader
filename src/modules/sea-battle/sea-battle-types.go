@@ -1,5 +1,6 @@
 package seabattle
 
+// socket actions
 const (
 	CONNECT_PLAYER       = "CONNECT_PLAYER"
 	DISCONNECT_PLAYER    = "DISCONNECT_PLAYER"
@@ -7,20 +8,25 @@ const (
 	END_GAME             = "END_GAME"
 	STEP                 = "STEP"
 	SET_PLAYER_POSITIONS = "SET_PLAYER_POSITIONS"
+	ERROR                = "ERROR"
 )
 
-// Types: START_GAME, END_GAME, STEP, CONNECT_PLAYER, DISCONNECT_PLAYER
+// step results
+const (
+	MISS   = "MISS"
+	STRIKE = "STRIKE"
+	KILL   = "KILL"
+)
+
+// Types: START_GAME, END_GAME, STEP, CONNECT_PLAYER, DISCONNECT_PLAYER, SET_PLAYER_POSITIONS
 type SocketMsg struct {
 	Type string `json:"type"`
 }
 
-type SetPlayerPositionsMsg struct {
+type UpdatePlayerPositionsMsg struct {
 	SocketMsg
-	Email     string
-	Positions []struct {
-		/* A1 */
-		Cell string
-	} `json:"positions"`
+	Email           string `json:"email"`
+	PlayerPositions string `json:"player_positions"`
 }
 
 type ConnectPlayerMsg struct {
@@ -37,7 +43,18 @@ type NewStepMsg struct {
 }
 
 type NewStepMsgResp struct {
-	ActivePlayerEmail string `json:"active_player_email"`
-	EnemyPlayerEmail  string `json:"enemy_player_email"`
-	Cell              string `json:"cell"`
+	/* who chooses cell */
+	ActorEmail string `json:"actor_email"`
+	/* on who field is assaulted */
+	TargetEmail string `json:"target_email"`
+	Cell        string `json:"cell"`
+	/* MISS, STRIKE, KILL */
+	Result string `json:"result"`
+}
+
+type UpdatePlayerPositionsMsgResp struct {
+	/* who changed positions */
+	Email string `json:"email"`
+	/* not empty in error occured*/
+	ErrorMsg string `json:"error"`
 }

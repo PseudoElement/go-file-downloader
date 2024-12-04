@@ -16,17 +16,18 @@ func (m *SeaBattleModule) _createRoomController(w http.ResponseWriter, req *http
 	}
 
 	roomId := uuid.New().String()
-	players := make([]Player, 0, 2)
+	players := make(map[string]Player)
 	positions := ""
 
 	newRoom := Room{
 		id:        roomId,
 		name:      params["room_name"],
 		players:   players,
+		isPlaying: false,
 		positions: &positions,
 	}
 
-	newRoom.players = append(newRoom.players, Player{email: params["client_email"], isOwner: true, room: newRoom})
+	newRoom.players[params["client_email"]] = Player{email: params["client_email"], isOwner: true, room: newRoom}
 	m.rooms = append(m.rooms, newRoom)
 
 	msg := types_module.MessageJson{

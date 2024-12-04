@@ -10,8 +10,9 @@ import (
 type Room struct {
 	id        string
 	name      string
+	isPlaying bool
 	positions *string
-	players   []Player
+	players   map[string]Player
 }
 
 type SeaBattleModule struct {
@@ -21,7 +22,7 @@ type SeaBattleModule struct {
 	rooms   []Room
 }
 
-func New(db *sql.DB, api *mux.Router) SeaBattleModule {
+func NewModule(db *sql.DB, api *mux.Router) SeaBattleModule {
 	return SeaBattleModule{
 		db:      db,
 		api:     api,

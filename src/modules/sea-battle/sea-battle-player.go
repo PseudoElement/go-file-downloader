@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -92,7 +93,7 @@ func (p *Player) Listen() {
 	defer p.Disconnect()
 
 	for {
-		messageType, bytesData, err := p.conn.ReadMessage()
+		_, bytesData, err := p.conn.ReadMessage()
 		if err != nil {
 			log.Println("Listen_ReadMessage err: ", err)
 			return
@@ -108,11 +109,6 @@ func (p *Player) Listen() {
 			return
 		}
 
-		if err := p.conn.WriteMessage(messageType, bytesData); err != nil {
-			log.Println("Listen_WriteMessage err: ", err)
-			return
-		}
-
 	}
 }
 
@@ -125,20 +121,84 @@ func (p *Player) handleNewMsg(msgBody any) error {
 			return p.queries.DisconnectPlayerFromRoom(val.Email, val.RoomName)
 		}
 	case NewStepMsg:
-		return p.updatePositions(val.Email, val)
+		return p.makeStep(val.Email, val)
+	case UpdatePlayerPositionsMsg:
+		return p.updatePlayerPositions(val.Email, val.PlayerPositions)
 	default:
 		return fmt.Errorf("Unknown msgBody type.")
 	}
 
 }
 
-func (p *Player) updatePositions(activePlayerEmail string, step NewStepMsg) error {
-	enemy, _ := slice_utils_module.Find(p.room.players, func(player Player) bool {
-		return player.email != activePlayerEmail
-	})
+/* newPositions without email - K1,J3+,J4+ ... */
+func (p *Player) updatePlayerPositions(email string, newPositions string) error {
+	if p.room.isPlaying {
+		errorMsg := "Game already started. You can't change positions."
+		for _, player := range p.room.players {
+			if email == player.email {
+				msg := UpdatePlayerPositionsMsgResp{
+					Email:    email,
+					ErrorMsg: errorMsg,
+				}
+				err := player.Conn().WriteJSON(msg)
+				if err != nil {
+					log.Println("updatePlayerPositions_WriteJSON  err: ", err.Error())
+				}
+			}
+		}
 
-	splitterBetweenPlayerNameAndPositions := fmt.Sprintf("%s - ", enemy.email)
-	splitterBetweenPlayers := fmt.Sprintf("__")
+		return nil
+	}
+
+	alreadyHasPositions, _ := regexp.MatchString(*p.room.positions, email)
+	if alreadyHasPositions {
+		splitted := strings.Split(*p.room.positions, PLAYER_FIELDS_SEPARATOR)
+		updatedAllPositions := ""
+
+		for _, playerPositions := range splitted {
+			isPlayerWhoChangesPos, _ := regexp.MatchString(playerPositions, email)
+			if !isPlayerWhoChangesPos {
+				updatedAllPositions += playerPositions + "___"
+			} else {
+				updatedAllPositions += email + ": " + newPositions + "___"
+			}
+		}
+		*p.room.positions = updatedAllPositions
+	} else {
+		if *p.room.positions != "" {
+			*p.room.positions += PLAYER_FIELDS_SEPARATOR
+		}
+		*p.room.positions += email + ": " + newPositions
+	}
+
+	err := p.queries.UpdatePositions(*p.room.positions)
+	if err != nil {
+		return err
+	}
+
+	for _, player := range p.room.players {
+		msg := UpdatePlayerPositionsMsgResp{
+			Email: email,
+		}
+		err = player.Conn().WriteJSON(msg)
+		if err != nil {
+			log.Println("updatePlayerPositions_WriteJSON  err: ", err.Error())
+		}
+	}
+
+	return nil
+}
+
+func (p *Player) makeStep(actorEmail string, step NewStepMsg) error {
+	var enemy Player
+	for _, player := range p.room.players {
+		if player.email != actorEmail {
+			enemy = player
+		}
+	}
+
+	splitterBetweenPlayerNameAndPositions := fmt.Sprintf("%s: ", enemy.email)
+	splitterBetweenPlayers := fmt.Sprintf(PLAYER_FIELDS_SEPARATOR)
 
 	splitted := strings.Split(*p.room.positions, splitterBetweenPlayerNameAndPositions)[1]
 	enemyPositionsStr := strings.Split(splitted, splitterBetweenPlayers)[0]
@@ -165,13 +225,13 @@ func (p *Player) updatePositions(activePlayerEmail string, step NewStepMsg) erro
 
 	for _, player := range p.room.players {
 		msg := NewStepMsgResp{
-			ActivePlayerEmail: activePlayerEmail,
-			EnemyPlayerEmail:  enemy.email,
-			Cell:              step.Cell,
+			ActorEmail:  actorEmail,
+			TargetEmail: enemy.email,
+			Cell:        step.Cell,
 		}
 		err = player.Conn().WriteJSON(msg)
 		if err != nil {
-			log.Println("player.Conn().WriteJSON err: ", err.Error())
+			log.Println("makeStep_WriteJSON err: ", err.Error())
 		}
 	}
 
