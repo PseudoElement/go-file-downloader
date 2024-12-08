@@ -13,7 +13,6 @@ import (
 	downloader_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader"
 	games_module "github.com/pseudoelement/go-file-downloader/src/modules/games"
 	healthcheck_module "github.com/pseudoelement/go-file-downloader/src/modules/healthcheck"
-	seabattle "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle"
 	"github.com/pseudoelement/go-file-downloader/src/utils/logger"
 	"github.com/rs/cors"
 )
@@ -28,8 +27,6 @@ func getAllowedOrigins() []string {
 }
 
 func main() {
-	fmt.Println(seabattle.CreateMockFields("bimba228", "borrow223423"))
-
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()
 

@@ -15,7 +15,7 @@ func New(db *sql.DB) SeaBattleQueries {
 	}
 }
 
-func (q SeaBattleQueries) CreateRoomsTable() error {
+func (q SeaBattleQueries) createRoomsTable() error {
 	_, err := q.db.Exec(`
 		CREATE TABLE IF NOT EXISTS seabattle_rooms (
 			id SERIAL NOT NULL PRIMARY KEY, 
@@ -31,7 +31,7 @@ func (q SeaBattleQueries) CreateRoomsTable() error {
 	return nil
 }
 
-func (q SeaBattleQueries) CreatePlayersTable() error {
+func (q SeaBattleQueries) createPlayersTable() error {
 	_, err := q.db.Exec(`
 		CREATE TABLE IF NOT EXISTS seabattle_players (
 			id SERIAL NOT NULL PRIMARY KEY, 
@@ -87,9 +87,9 @@ func (q SeaBattleQueries) DisconnectPlayerFromRoom(email string, roomName string
 	return nil
 }
 
-func (q SeaBattleQueries) UpdatePositions(newPositions string) error {
-	query := fmt.Sprintf("INSERT INTO seabattle_rooms(positions) VALUES($1);")
-	_, err := q.db.Exec(query, newPositions)
+func (q SeaBattleQueries) UpdatePositions(newPositions string, roomName string) error {
+	query := fmt.Sprintf("INSERT INTO seabattle_rooms(positions) VALUES($1) WHERE room_name=$2;")
+	_, err := q.db.Exec(query, newPositions, roomName)
 	if err != nil {
 		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
 	}

@@ -1,5 +1,7 @@
 # Scenario
 
+`ON SERVER INIT LOAD ALL EXISTING ROOMS IF EXISTS`
+
 1. Create room with unique id and name
 2. Connect to room by name
 3. Send room name to friend
@@ -20,7 +22,7 @@
 `player1_id: K1*+,K2.,O3.___player2_id: E7.,E4.___`
 `K1+ - has ship`
 `K1+* - striked ship`
-`K1. - empty cell`
+`K1. - missed shot`
 
 
 Front: 
@@ -35,5 +37,16 @@ Then Users select cell one after another.
 Server checks if choice stroke enemy ship.
 Then sends info to both client NewStepMsgResp{}.
 Frontend fields show updated info.
+
+
+==========
+
+Create new room - call _createRoomController, save room in map and db, add player in room.players, connect user to socket.
+Connect to existing room - call _connectToRoomWsController, add player in room.players, connect user to socket, send ConnectPlayerResp to client.
+
+Set player READY - send msg to socket, set player.positions, save all new positions in db, send PlayerReadyResp msg to client.
+Make step in game - send msg to socket, update player position in room.players[player.id], save all new positions in db, send PlayerStepResp msg to client.
+
+===========
 
 

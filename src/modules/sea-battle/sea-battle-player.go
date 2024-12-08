@@ -2,26 +2,31 @@ package seabattle
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	seabattle_queries "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle/db"
 	slice_utils_module "github.com/pseudoelement/golang-utils/src/utils/slices"
 )
 
-type Player struct {
+type PlayerInfo struct {
 	email   string
+	id      string
 	isOwner bool
-	room    Room
-	conn    *websocket.Conn
-	w       http.ResponseWriter
-	req     *http.Request
-	queries seabattle_queries.SeaBattleQueries
+}
+
+type Player struct {
+	info          PlayerInfo
+	positions     string
+	room          Room
+	eventHandlers EventHandlers
+	conn          *websocket.Conn
+	w             http.ResponseWriter
+	req           *http.Request
 }
 
 func NewPlayer(
@@ -30,16 +35,24 @@ func NewPlayer(
 	room Room,
 	w http.ResponseWriter,
 	req *http.Request,
-	queries seabattle_queries.SeaBattleQueries,
 ) Player {
+	id := uuid.New().String()
+
 	return Player{
-		email:   email,
-		isOwner: isOwner,
-		w:       w,
-		req:     req,
-		queries: queries,
-		room:    room,
+		info: PlayerInfo{
+			email:   email,
+			isOwner: isOwner,
+			id:      id,
+		},
+		eventHandlers: EventHandlers{room: room},
+		w:             w,
+		req:           req,
+		room:          room,
 	}
+}
+
+func (p *Player) queries() seabattle_queries.SeaBattleQueries {
+	return p.room.queries
 }
 
 func (p *Player) Connect() error {
@@ -62,11 +75,17 @@ func (p *Player) Connect() error {
 
 	conn, err := upgrader.Upgrade(p.w, p.req, nil)
 	if err != nil {
-		return fmt.Errorf("Error in Player_Connect. Err: %s", err.Error())
+		return err
 	}
 
 	p.conn = conn
-	log.Printf("Client %s connected to %s.", p.email, p.room.name)
+	// add player in room.players map
+	p.room.players[p.info.id] = p
+	if err := p.eventHandlers.handleConnection(p.info.email); err != nil {
+		return err
+	}
+
+	log.Printf("Client %s connected to %s.", p.info.email, p.room.name)
 
 	return nil
 }
@@ -76,166 +95,38 @@ func (p *Player) Conn() *websocket.Conn {
 }
 
 func (p *Player) Disconnect() error {
-	err := p.conn.Close()
-	if err != nil {
-		return fmt.Errorf("Error in Player_Disconnect_Close. Err: %s", err.Error())
+	if err := p.conn.Close(); err != nil {
+		return err
 	}
 
-	err = p.queries.DisconnectPlayerFromRoom(p.email, p.room.name)
-	if err != nil {
-		return fmt.Errorf("Error in Player_Disconnect_DisconnectPlayerFromRoom. Err: %s", err.Error())
+	if err := p.queries().DisconnectPlayerFromRoom(p.info.email, p.room.name); err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (p *Player) Listen() {
+func (p *Player) Broadcast() {
 	defer p.Disconnect()
 
 	for {
 		_, bytesData, err := p.conn.ReadMessage()
 		if err != nil {
-			log.Println("Listen_ReadMessage err: ", err)
+			log.Println("Broadcast_ReadMessage err: ", err)
 			return
 		}
 
-		var msgBody any
+		var msgBody SocketRequestMsg[any]
 		if err := json.Unmarshal(bytesData, &msgBody); err != nil {
-			log.Println("Listen_Unmarshal err: ", err)
+			log.Println("Broadcast_Unmarshal err: ", err.Error())
 			return
 		}
-		if err = p.handleNewMsg(msgBody); err != nil {
-			log.Println("Listen_handlePlayerAction err: ", err)
+		if err = p.eventHandlers.HandleNewMsg(msgBody); err != nil {
+			log.Println("Broadcast_p.eventHandlers.HandleNewMsg err: ", err.Error())
 			return
 		}
 
 	}
-}
-
-func (p *Player) handleNewMsg(msgBody any) error {
-	switch val := msgBody.(type) {
-	case ConnectPlayerMsg:
-		if val.Type == CONNECT_PLAYER {
-			return p.queries.ConnectPlayerToRoom(val.Email, val.RoomName)
-		} else {
-			return p.queries.DisconnectPlayerFromRoom(val.Email, val.RoomName)
-		}
-	case NewStepMsg:
-		return p.makeStep(val.Email, val)
-	case UpdatePlayerPositionsMsg:
-		return p.updatePlayerPositions(val.Email, val.PlayerPositions)
-	default:
-		return fmt.Errorf("Unknown msgBody type.")
-	}
-
-}
-
-/* newPositions without email - K1,J3+,J4+ ... */
-func (p *Player) updatePlayerPositions(email string, newPositions string) error {
-	if p.room.isPlaying {
-		errorMsg := "Game already started. You can't change positions."
-		for _, player := range p.room.players {
-			if email == player.email {
-				msg := UpdatePlayerPositionsMsgResp{
-					Email:    email,
-					ErrorMsg: errorMsg,
-				}
-				err := player.Conn().WriteJSON(msg)
-				if err != nil {
-					log.Println("updatePlayerPositions_WriteJSON  err: ", err.Error())
-				}
-			}
-		}
-
-		return nil
-	}
-
-	alreadyHasPositions, _ := regexp.MatchString(*p.room.positions, email)
-	if alreadyHasPositions {
-		splitted := strings.Split(*p.room.positions, PLAYER_FIELDS_SEPARATOR)
-		updatedAllPositions := ""
-
-		for _, playerPositions := range splitted {
-			isPlayerWhoChangesPos, _ := regexp.MatchString(playerPositions, email)
-			if !isPlayerWhoChangesPos {
-				updatedAllPositions += playerPositions + "___"
-			} else {
-				updatedAllPositions += email + ": " + newPositions + "___"
-			}
-		}
-		*p.room.positions = updatedAllPositions
-	} else {
-		if *p.room.positions != "" {
-			*p.room.positions += PLAYER_FIELDS_SEPARATOR
-		}
-		*p.room.positions += email + ": " + newPositions
-	}
-
-	err := p.queries.UpdatePositions(*p.room.positions)
-	if err != nil {
-		return err
-	}
-
-	for _, player := range p.room.players {
-		msg := UpdatePlayerPositionsMsgResp{
-			Email: email,
-		}
-		err = player.Conn().WriteJSON(msg)
-		if err != nil {
-			log.Println("updatePlayerPositions_WriteJSON  err: ", err.Error())
-		}
-	}
-
-	return nil
-}
-
-func (p *Player) makeStep(actorEmail string, step NewStepMsg) error {
-	var enemy Player
-	for _, player := range p.room.players {
-		if player.email != actorEmail {
-			enemy = player
-		}
-	}
-
-	splitterBetweenPlayerNameAndPositions := fmt.Sprintf("%s: ", enemy.email)
-	splitterBetweenPlayers := fmt.Sprintf(PLAYER_FIELDS_SEPARATOR)
-
-	splitted := strings.Split(*p.room.positions, splitterBetweenPlayerNameAndPositions)[1]
-	enemyPositionsStr := strings.Split(splitted, splitterBetweenPlayers)[0]
-	enemyPositionsSlice := strings.Split(enemyPositionsStr, ",")
-
-	var newEnemyPositionsStr string
-	for _, position := range enemyPositionsSlice {
-		updated := position
-		if strings.HasPrefix(position, step.Cell) {
-			if strings.HasSuffix(position, "+") {
-				// strike cell with ship
-				updated += "*"
-			} else {
-				updated += "."
-			}
-		}
-		newEnemyPositionsStr += updated
-	}
-
-	err := p.queries.UpdatePositions(newEnemyPositionsStr)
-	if err != nil {
-		return err
-	}
-
-	for _, player := range p.room.players {
-		msg := NewStepMsgResp{
-			ActorEmail:  actorEmail,
-			TargetEmail: enemy.email,
-			Cell:        step.Cell,
-		}
-		err = player.Conn().WriteJSON(msg)
-		if err != nil {
-			log.Println("makeStep_WriteJSON err: ", err.Error())
-		}
-	}
-
-	return nil
 }
 
 var _ PlayerSocket = (*Player)(nil)

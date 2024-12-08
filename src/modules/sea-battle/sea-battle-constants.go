@@ -4,7 +4,27 @@ import (
 	"strconv"
 )
 
-const PLAYER_FIELDS_SEPARATOR = "___"
+const PLAYER_POSITIONS_SEPARATOR = "___"
+const STRIKED_CELL_SYMBOL = "*"
+const CELL_WITH_SHIP_SYMBOL = "+"
+const TOTAL_CELL_WITH_SHIPS_COUNT = 20
+
+const (
+	CONNECT_PLAYER       = "CONNECT_PLAYER"
+	DISCONNECT_PLAYER    = "DISCONNECT_PLAYER"
+	STEP                 = "STEP"
+	SET_PLAYER_POSITIONS = "SET_PLAYER_POSITIONS"
+	WIN_GAME             = "WIN_GAME"
+	ERROR                = "ERROR"
+)
+
+// Player step results
+const (
+	HIT             = "HIT"
+	MISS            = "MISS"
+	KILL            = "KILL"
+	ALREADY_CHECKED = "ALREADY_CHECKED"
+)
 
 func CreateMockFields(player1 string, player2 string) string {
 	s := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
@@ -30,7 +50,7 @@ func CreateMockFields(player1 string, player2 string) string {
 	fieldsPlayer1 := creator(player1)
 	fieldsPlayer2 := creator(player2)
 
-	allFields := fieldsPlayer1 + PLAYER_FIELDS_SEPARATOR + fieldsPlayer2
+	allFields := fieldsPlayer1 + PLAYER_POSITIONS_SEPARATOR + fieldsPlayer2
 
 	return allFields
 }
