@@ -26,11 +26,13 @@ type SeaBattleModule struct {
 
 func NewModule(db *sql.DB, api *mux.Router) SeaBattleModule {
 	rooms := make([]Room, 0, 1000)
+	queries := seabattle_queries.New(db)
+
 	return SeaBattleModule{
 		db:      db,
 		api:     api,
-		queries: seabattle_queries.New(db),
-		srv:     SeaBattleService{rooms: rooms},
+		queries: queries,
+		srv:     NewSeaBattleService(rooms, queries),
 		rooms:   rooms,
 	}
 }

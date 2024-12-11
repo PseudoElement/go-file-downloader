@@ -30,7 +30,7 @@ func NewTextContentCreator(logger logger.Logger) *TextContentCreator {
 }
 
 func (srv *TextContentCreator) CreateFileContent(body interface{}) (string, error) {
-	srv.logger.AddLog("TXT_CreateFileContent", "Start!")
+	// srv.logger.AddLog("TXT_CreateFileContent", "Start!")
 	textBody, ok := body.(types_module.DownloadTextReqBody)
 	if !ok {
 		return "", fmt.Errorf("[TextContentCreator] invalid body type")
@@ -43,12 +43,12 @@ func (srv *TextContentCreator) CreateFileContent(body interface{}) (string, erro
 	}
 	fileContent := srv.concatAllCellsInTable(columnsWithValuesInCells, rowsCountWithHeader, len(textBody.ColumnsData))
 
-	srv.logger.ShowLogs("TXT_CreateFileContent")
+	// srv.logger.ShowLogs("TXT_CreateFileContent")
 	return fileContent, nil
 }
 
 func (srv *TextContentCreator) CreateFileContentAsync(body interface{}) (string, error) {
-	srv.logger.AddLog("TXT_CreateFileContentAsync", "Start!")
+	// srv.logger.AddLog("TXT_CreateFileContentAsync", "Start!")
 
 	textBody, ok := body.(types_module.DownloadTextReqBody)
 	if !ok {
@@ -62,7 +62,7 @@ func (srv *TextContentCreator) CreateFileContentAsync(body interface{}) (string,
 	}
 	fileContent := srv.concatAllCellsInTable(columnsWithValuesInCells, rowsCountWithHeader, len(textBody.ColumnsData))
 
-	srv.logger.ShowLogs("TXT_CreateFileContentAsync")
+	// srv.logger.ShowLogs("TXT_CreateFileContentAsync")
 
 	return fileContent, nil
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	seabattle_queries "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle/db"
+	"github.com/pseudoelement/go-file-downloader/src/utils/common"
 )
 
 type EventHandlers struct {
@@ -163,7 +164,7 @@ func (eh *EventHandlers) handleHit(player *Player, enemy *Player, step NewStepRe
 		},
 	}
 
-	if eh.isShipKilled(player, enemy, step) {
+	if eh.isShipKilled(enemy, step) {
 		msg.Message = strings.Replace(msg.Message, "hit", "killed", 1)
 		msg.Data.Result = KILL
 	}
@@ -217,22 +218,21 @@ func (eh *EventHandlers) updatePlayerPositions(player *Player, enemy *Player, st
 	return nil
 }
 
-func (eh *EventHandlers) isShipKilled(player *Player, enemy *Player, step NewStepReqMsg) bool {
-	splitted := strings.Split(step.Step, "")
-	letter := splitted[0]
-	number, _ := strconv.Atoi(splitted[1])
+func (eh *EventHandlers) isShipKilled(enemy *Player, step NewStepReqMsg) bool {
+	column := step.Step[:1]
+	row := step.Step[1:]
 
-	toStart := number - 1
-	toEnd := number + 1
-	for idx := 0; toEnd <= 10 || toStart >= 0; idx++ {
-		prevCellInRow := letter + strconv.Itoa(toStart)
-		nextCellInRow := letter + strconv.Itoa(toEnd)
+	to1 := common.ToInt(row) - 1
+	to10 := common.ToInt(row) + 1
+	for idx := 0; to10 <= 10 || to1 >= 0; idx++ {
+		prevCellInColumn := column + strconv.Itoa(to1)
+		nextCellInColumn := column + strconv.Itoa(to10)
 
-		prevCellExpression := fmt.Sprintf("%s.*,", prevCellInRow)
+		prevCellExpression := fmt.Sprintf("%s.*,", prevCellInColumn)
 		r1, _ := regexp.Compile(prevCellExpression)
 		prevCellValue := r1.FindString(enemy.positions)
 
-		nextCellExpression := fmt.Sprintf("%s.*,", nextCellInRow)
+		nextCellExpression := fmt.Sprintf("%s.*,", nextCellInColumn)
 		r2, _ := regexp.Compile(nextCellExpression)
 		nextCellValue := r2.FindString(enemy.positions)
 
@@ -242,26 +242,70 @@ func (eh *EventHandlers) isShipKilled(player *Player, enemy *Player, step NewSte
 			} else {
 				return true
 			}
-		} else {
-			if strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) {
-				if !strings.Contains(prevCellValue, STRIKED_CELL_SYMBOL) {
-					return false
-				}
-			}
-			if strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) {
-				if !strings.Contains(nextCellValue, STRIKED_CELL_SYMBOL) {
-					return false
-				}
-			}
 		}
 
-		toStart--
-		toEnd++
+		matchPrev := strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) == strings.Contains(prevCellValue, STRIKED_CELL_SYMBOL)
+		matchNext := strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) == strings.Contains(nextCellValue, STRIKED_CELL_SYMBOL)
 
+		if !matchNext || !matchPrev {
+			return false
+		}
+
+		if to1 > -1 {
+			to1--
+		}
+		if to10 < 11 {
+			to10++
+		}
 	}
-	//HANDLE COLUMN BY NUMBER
 
-	return true
+	//HANDLE row (A1, B1, C1...)
+	letters := [10]string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
+	var columnIdx int
+	for i, l := range letters {
+		if string(l) == string(column) {
+			columnIdx = i + 1
+		}
+	}
+
+	toJ := columnIdx
+	toA := columnIdx
+	for idx := 0; toJ <= 10 || toA >= 0; idx++ {
+		prevLetter := letters[toA]
+		nextLetter := letters[toJ]
+		prevCellInRow := prevLetter + row
+		nextCellInRow := nextLetter + row
+
+		prevCellExpression := fmt.Sprintf("%s.*,", prevCellInRow)
+		r1, _ := regexp.Compile(prevCellExpression)
+		prevCellValue := r1.FindString(enemy.positions)
+
+		nextCellExpression := fmt.Sprintf("%s.*,", nextCellInRow)
+		r2, _ := regexp.Compile(nextCellExpression)
+		nextCellValue := r2.FindString(enemy.positions)
+
+		// here we suppose that ship located in one ROW (exm. A1+,B1+,C1+), cause it's not returned value in column loop.
+		// if it's not contain ship even on first iteration - we suppose here is 1-cell ship.
+		if !strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) && !strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) {
+			return true
+		}
+
+		matchPrev := strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) == strings.Contains(prevCellValue, STRIKED_CELL_SYMBOL)
+		matchNext := strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) == strings.Contains(nextCellValue, STRIKED_CELL_SYMBOL)
+
+		if !matchNext || !matchPrev {
+			return false
+		}
+
+		if toA > -1 {
+			toA--
+		}
+		if toJ < 11 {
+			toJ++
+		}
+	}
+
+	return false
 }
 
 func (eh *EventHandlers) isWin(steppingPlayerEmail string) bool {

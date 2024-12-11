@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/pseudoelement/go-file-downloader/src/db/postgres"
+	"github.com/pseudoelement/go-file-downloader/src/middlewares"
 	downloader_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader"
 	games_module "github.com/pseudoelement/go-file-downloader/src/modules/games"
 	healthcheck_module "github.com/pseudoelement/go-file-downloader/src/modules/healthcheck"
@@ -34,6 +35,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("err loading: %v", err)
 	}
+
+	api.Use(middlewares.TimeLoggerCommonMW)
 
 	logger := logger.New()
 	db := postgres.New()
@@ -64,7 +67,7 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler := c.Handler(r)
+	handler := c.Handler(api)
 
 	fmt.Println("Listening port :8080")
 	log.Fatal(http.ListenAndServe("127.0.0.1:8080", handler))

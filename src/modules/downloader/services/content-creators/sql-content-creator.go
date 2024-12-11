@@ -30,7 +30,7 @@ func NewSqlContentCreator(logger logger.Logger) *SqlContentCreator {
 }
 
 func (srv *SqlContentCreator) CreateFileContent(body interface{}) (string, error) {
-	srv.logger.AddLog("SQL_CreateFileContent", "Start!")
+	// srv.logger.AddLog("SQL_CreateFileContent", "Start!")
 	sqlBody, ok := body.(types_module.DownloadSqlReqBody)
 	if !ok {
 		return "", fmt.Errorf("[SqlContentCreator] Invalid body type")
@@ -62,13 +62,13 @@ func (srv *SqlContentCreator) CreateFileContent(body interface{}) (string, error
 		rowWithParagraph := row + "\n\n"
 		contentBuffer.WriteString(rowWithParagraph)
 	}
-	srv.logger.ShowLogs("SQL_CreateFileContent")
+	// srv.logger.ShowLogs("SQL_CreateFileContent")
 
 	return contentBuffer.String(), nil
 }
 
 func (srv *SqlContentCreator) CreateFileContentAsync(body interface{}) (string, error) {
-	srv.logger.AddLog("SQL_CreateFileContentAsync", "Start")
+	// srv.logger.AddLog("SQL_CreateFileContentAsync", "Start")
 	sqlBody, ok := body.(types_module.DownloadSqlReqBody)
 	if !ok {
 		return "", fmt.Errorf("[SqlContentCreator] Invalid body type")
@@ -118,7 +118,7 @@ func (srv *SqlContentCreator) CreateFileContentAsync(body interface{}) (string, 
 	case err := <-errorChan:
 		return "", err
 	case <-doneChan:
-		srv.logger.ShowLogs("SQL_CreateFileContentAsync")
+		// srv.logger.ShowLogs("SQL_CreateFileContentAsync")
 		return contentBuffer.String(), nil
 	}
 }
