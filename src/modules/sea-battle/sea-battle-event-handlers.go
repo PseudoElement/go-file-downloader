@@ -14,6 +14,10 @@ type EventHandlers struct {
 	room Room
 }
 
+func NewEventHandlers(room Room) EventHandlers {
+	return EventHandlers{room: room}
+}
+
 func (eh *EventHandlers) HandleNewMsg(msgBody SocketRequestMsg[any]) error {
 	switch data := msgBody.Data.(type) {
 	case NewStepReqMsg:
@@ -60,23 +64,38 @@ func (eh *EventHandlers) sendMessageToClients(msg any) {
 
 func (eh *EventHandlers) handleConnection(email string) error {
 	player := eh.getPlayerByEmail(email)
-	if err := eh.queries().ConnectPlayerToRoom(player.info.email, player.room.name); err != nil {
+	if err := eh.queries().ConnectPlayerToRoom(player.info.email, player.room.name, player.info.isOwner); err != nil {
 		return err
 	}
 
-	for _, player := range eh.room.players {
-		msg := SocketRespMsg[ConnectPlayerResp]{
-			Message:    fmt.Sprintf("Player %s connected to %s.", player.info.email, player.room.name),
-			ActionType: CONNECT_PLAYER,
-			Data: ConnectPlayerResp{
-				Email: player.info.email,
-				Id:    player.info.id,
-			},
-		}
-		if err := player.Conn().WriteJSON(msg); err != nil {
-			eh.queries().SaveNewError(player.room.id, player.info.id, err.Error())
-		}
+	msg := SocketRespMsg[ConnectPlayerResp]{
+		Message:    fmt.Sprintf("Player %s connected to %s.", player.info.email, player.room.name),
+		ActionType: CONNECT_PLAYER,
+		Data: ConnectPlayerResp{
+			Email: player.info.email,
+			Id:    player.info.id,
+		},
 	}
+	eh.sendMessageToClients(msg)
+
+	return nil
+}
+
+func (eh *EventHandlers) handleDisconnection(email string) error {
+	player := eh.getPlayerByEmail(email)
+	if err := eh.queries().DisconnectPlayerFromRoom(player.info.email, player.room.name); err != nil {
+		return err
+	}
+
+	msg := SocketRespMsg[ConnectPlayerResp]{
+		Message:    fmt.Sprintf("Player %s disconnected from %s.", player.info.email, player.room.name),
+		ActionType: DISCONNECT_PLAYER,
+		Data: ConnectPlayerResp{
+			Email: player.info.email,
+			Id:    player.info.id,
+		},
+	}
+	eh.sendMessageToClients(msg)
 
 	return nil
 }
@@ -285,7 +304,7 @@ func (eh *EventHandlers) isShipKilled(enemy *Player, step NewStepReqMsg) bool {
 		nextCellValue := r2.FindString(enemy.positions)
 
 		// here we suppose that ship located in one ROW (exm. A1+,B1+,C1+), cause it's not returned value in column loop.
-		// if it's not contain ship even on first iteration - we suppose here is 1-cell ship.
+		// if it doesn't contain ship even on first iteration - we suppose here is 1-cell ship.
 		if !strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) && !strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) {
 			return true
 		}

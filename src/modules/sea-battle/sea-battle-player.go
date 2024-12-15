@@ -31,20 +31,19 @@ type Player struct {
 
 func NewPlayer(
 	email string,
-	isOwner bool,
 	room Room,
 	w http.ResponseWriter,
 	req *http.Request,
-) Player {
+) *Player {
 	id := uuid.New().String()
 
-	return Player{
+	return &Player{
 		info: PlayerInfo{
 			email:   email,
-			isOwner: isOwner,
+			isOwner: len(room.players) == 0,
 			id:      id,
 		},
-		eventHandlers: EventHandlers{room: room},
+		eventHandlers: NewEventHandlers(room),
 		w:             w,
 		req:           req,
 		room:          room,
@@ -80,7 +79,7 @@ func (p *Player) Connect() error {
 
 	p.conn = conn
 	// add player in room.players map
-	p.room.players[p.info.id] = p
+	// p.room.players[p.info.id] = p
 	if err := p.eventHandlers.handleConnection(p.info.email); err != nil {
 		return err
 	}
@@ -98,8 +97,7 @@ func (p *Player) Disconnect() error {
 	if err := p.conn.Close(); err != nil {
 		return err
 	}
-
-	if err := p.queries().DisconnectPlayerFromRoom(p.info.email, p.room.name); err != nil {
+	if err := p.eventHandlers.handleDisconnection(p.info.email); err != nil {
 		return err
 	}
 
@@ -127,6 +125,10 @@ func (p *Player) Broadcast() {
 		}
 
 	}
+}
+
+func (p *Player) MakeAsOwner() {
+	p.info.isOwner = true
 }
 
 var _ PlayerSocket = (*Player)(nil)

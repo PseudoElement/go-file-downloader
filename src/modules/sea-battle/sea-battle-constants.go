@@ -4,6 +4,11 @@ import (
 	"strconv"
 )
 
+// ERROR CODES
+const (
+	ROOM_ALREADY_EXISTS = 1
+)
+
 const PLAYER_POSITIONS_SEPARATOR = "___"
 const STRIKED_CELL_SYMBOL = "*"
 const CELL_WITH_SHIP_SYMBOL = "+"

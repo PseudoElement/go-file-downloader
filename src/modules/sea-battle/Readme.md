@@ -19,7 +19,7 @@
 
 # SeaBattle ships posiitions example:
 
-`player1_id: K1*+,K2.,O3.___player2_id: E7.,E4.___`
+`player1_id: K1+*,K2.,O3.___player2_id: E7.,E4.___`
 `K1+ - has ship`
 `K1+* - striked ship`
 `K1. - missed shot`
@@ -49,4 +49,14 @@ Make step in game - send msg to socket, update player position in room.players[p
 
 ===========
 
+Requirements ro ROOM name: minLen(1), required, unique.
 
+
+===========
+GetRoomsList resp :
+resp: {
+	rooms: {
+		room_id_1: {room_name: "room_1", room_id: "room_id_1", created_at: "12 Dec 2025", players: [Player, Player]},
+		room_id_2: {room_name: "room_2", room_id: "room_id_2", created_at: "13 Dec 2025", players: [Player, Player]}
+	}
+}

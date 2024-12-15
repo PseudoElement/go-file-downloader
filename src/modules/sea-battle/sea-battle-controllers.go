@@ -14,13 +14,42 @@ func (m *SeaBattleModule) _createRoomController(w http.ResponseWriter, req *http
 		return
 	}
 
-	if e := m.srv.createNewRoom(params["room_name"], params["player_email"], w, req); e != nil {
-		api_module.FailResponse(w, e.Error(), 400)
+	if e, msgWithCode := m.srv.createNewRoom(params["room_name"], params["player_email"], w, req); e != nil {
+		if msgWithCode != nil {
+			api_module.FailResponseWithCode(w, *msgWithCode, 400)
+		} else {
+			api_module.FailResponse(w, e.Error(), 400)
+		}
 		return
 	}
 
 	msg := types_module.MessageJson{Message: "Room created successfully."}
 	api_module.SuccessResponse(w, msg, 200)
+}
+
+func (m *SeaBattleModule) _disconenctFromRoom(w http.ResponseWriter, req *http.Request) {
+	params, err := api_module.MapQueryParams(req, "player_email", "room_name")
+	if err != nil {
+		api_module.FailResponse(w, err.Error(), err.Status())
+		return
+	}
+
+	if err := m.srv.disconnectUserFromRoom(params["player_email"], params["room_name"], w, req); err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
+		return
+	}
+
+	msg := types_module.MessageJson{Message: "You disconnected to room."}
+	api_module.SuccessResponse(w, msg, 200)
+}
+
+func (m *SeaBattleModule) _getRoomsListController(w http.ResponseWriter, req *http.Request) {
+	if rooms, err := m.srv.getRoomsList(); err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
+		return
+	} else {
+		api_module.SuccessResponse(w, rooms, 200)
+	}
 }
 
 func (m *SeaBattleModule) _connectToRoomWsController(w http.ResponseWriter, req *http.Request) {

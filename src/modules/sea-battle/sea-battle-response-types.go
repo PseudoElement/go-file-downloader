@@ -25,3 +25,20 @@ type PlayerStepResp struct {
 }
 
 type PlayerSetPositionsResp struct{}
+
+type RoomsListResp struct {
+	// key is roomId
+	Rooms map[string]RoomsListRoomResp `json:"rooms"`
+}
+
+type RoomsListRoomResp struct {
+	RoomName  string                `json:"room_name"`
+	CreatedAt string                `json:"created_at"`
+	Players   []RoomsListPlayerResp `json:"players"`
+}
+
+type RoomsListPlayerResp struct {
+	PlayerId    string `json:"player_id"`
+	PlayerEmail string `json:"player_name"`
+	IsOwner     bool   `json:"is_owner"`
+}
