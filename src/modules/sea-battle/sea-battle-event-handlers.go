@@ -128,7 +128,7 @@ func (eh *EventHandlers) handlePlayerStep(email string, step NewStepReqMsg) erro
 	player := eh.getPlayerByEmail(email)
 	enemy := eh.getEnemy(email)
 
-	expression := fmt.Sprintf("%s.*,", step.Step)
+	expression := fmt.Sprintf("%s[^,]*,", step.Step)
 	r, _ := regexp.Compile(expression)
 	selectedCellValue := r.FindString(enemy.positions)
 	cellValueWithoutComma := selectedCellValue[:len(selectedCellValue)-1]
@@ -238,24 +238,36 @@ func (eh *EventHandlers) updatePlayerPositions(player *Player, enemy *Player, st
 }
 
 func (eh *EventHandlers) isShipKilled(enemy *Player, step NewStepReqMsg) bool {
-	column := step.Step[:1]
-	row := step.Step[1:]
+	row := step.Step[:1]    // A
+	column := step.Step[1:] // 1
 
-	to1 := common.ToInt(row) - 1
-	to10 := common.ToInt(row) + 1
-	for idx := 0; to10 <= 10 || to1 >= 0; idx++ {
-		prevCellInColumn := column + strconv.Itoa(to1)
-		nextCellInColumn := column + strconv.Itoa(to10)
+	to1 := common.ToInt(column) - 1
+	to10 := common.ToInt(column) + 1
+	// prevCell was empty
+	var isLeftShipEnd bool
+	// nextCell was empty
+	var isRightShipEnd bool
+	//ROW A1, A2, A3...
+	for idx := 0; to10 < 10 || to1 > 0; idx++ {
+		prevCellInRow := row + strconv.Itoa(to1)
+		nextCellInRow := row + strconv.Itoa(to10)
 
-		prevCellExpression := fmt.Sprintf("%s.*,", prevCellInColumn)
+		prevCellExpression := fmt.Sprintf("%s[^,]*,", prevCellInRow)
 		r1, _ := regexp.Compile(prevCellExpression)
 		prevCellValue := r1.FindString(enemy.positions)
 
-		nextCellExpression := fmt.Sprintf("%s.*,", nextCellInColumn)
+		nextCellExpression := fmt.Sprintf("%s[^,]*,", nextCellInRow)
 		r2, _ := regexp.Compile(nextCellExpression)
 		nextCellValue := r2.FindString(enemy.positions)
 
-		if !strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) && !strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) {
+		if !strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) {
+			isLeftShipEnd = true
+		}
+		if !strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) {
+			isRightShipEnd = true
+		}
+
+		if isLeftShipEnd && isRightShipEnd {
 			if idx == 0 {
 				break
 			} else {
@@ -270,47 +282,71 @@ func (eh *EventHandlers) isShipKilled(enemy *Player, step NewStepReqMsg) bool {
 			return false
 		}
 
-		if to1 > -1 {
+		if to1 > 0 {
 			to1--
 		}
-		if to10 < 11 {
+		if to10 < 10 {
 			to10++
 		}
 	}
 
-	//HANDLE row (A1, B1, C1...)
+	//column (A1, B1, C1...)
 	letters := [10]string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"}
+	minLettersIdx := 0
+	maxLettersIdx := len(letters) - 1
 	var columnIdx int
 	for i, l := range letters {
-		if string(l) == string(column) {
-			columnIdx = i + 1
+		if string(l) == string(row) {
+			columnIdx = i
 		}
 	}
 
-	toJ := columnIdx
-	toA := columnIdx
-	for idx := 0; toJ <= 10 || toA >= 0; idx++ {
-		prevLetter := letters[toA]
-		nextLetter := letters[toJ]
-		prevCellInRow := prevLetter + row
-		nextCellInRow := nextLetter + row
+	toJ := columnIdx + 1
+	toA := columnIdx - 1
+	// nextCell was empty
+	var isBottomShipEnd bool
+	// prevCell was empty
+	var isTopShipEnd bool
+	for idx := 0; toJ < 10 || toA > 0; idx++ {
+		isPrevOutOfMap := toA < minLettersIdx
+		isNextOutOfMap := toJ > maxLettersIdx
+		// A1+*,A2,A3
+		var matchPrev bool = isPrevOutOfMap
+		var matchNext bool = isNextOutOfMap
+		prevCellValue := ""
+		nextCellValue := ""
+		if !isPrevOutOfMap {
+			prevLetter := letters[toA]
+			prevCellInColumn := prevLetter + column
 
-		prevCellExpression := fmt.Sprintf("%s.*,", prevCellInRow)
-		r1, _ := regexp.Compile(prevCellExpression)
-		prevCellValue := r1.FindString(enemy.positions)
+			prevCellExpression := fmt.Sprintf("%s[^,]*,", prevCellInColumn)
+			r1, _ := regexp.Compile(prevCellExpression)
+			prevCellValue = r1.FindString(enemy.positions)
 
-		nextCellExpression := fmt.Sprintf("%s.*,", nextCellInRow)
-		r2, _ := regexp.Compile(nextCellExpression)
-		nextCellValue := r2.FindString(enemy.positions)
+			matchPrev = strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) == strings.Contains(prevCellValue, STRIKED_CELL_SYMBOL)
 
-		// here we suppose that ship located in one ROW (exm. A1+,B1+,C1+), cause it's not returned value in column loop.
-		// if it doesn't contain ship even on first iteration - we suppose here is 1-cell ship.
-		if !strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) && !strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) {
-			return true
+		}
+		if !isNextOutOfMap {
+			nextLetter := letters[toJ]
+			nextCellInColumn := nextLetter + column
+
+			nextCellExpression := fmt.Sprintf("%s[^,]*,", nextCellInColumn)
+			r2, _ := regexp.Compile(nextCellExpression)
+			nextCellValue = r2.FindString(enemy.positions)
+
+			matchNext = strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) == strings.Contains(nextCellValue, STRIKED_CELL_SYMBOL)
 		}
 
-		matchPrev := strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) == strings.Contains(prevCellValue, STRIKED_CELL_SYMBOL)
-		matchNext := strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) == strings.Contains(nextCellValue, STRIKED_CELL_SYMBOL)
+		if !strings.Contains(prevCellValue, CELL_WITH_SHIP_SYMBOL) {
+			isTopShipEnd = true
+		}
+		if !strings.Contains(nextCellValue, CELL_WITH_SHIP_SYMBOL) {
+			isBottomShipEnd = true
+		}
+
+		if (isTopShipEnd || isPrevOutOfMap) && (isBottomShipEnd || isNextOutOfMap) {
+			return true
+		}
 
 		if !matchNext || !matchPrev {
 			return false
