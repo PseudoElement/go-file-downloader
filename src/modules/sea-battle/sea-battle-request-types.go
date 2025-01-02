@@ -7,7 +7,7 @@ type SocketRequestMsg[T any] struct {
 
 type NewStepReqMsg struct {
 	/* player step (example K1) */
-	Step string `json:"cell"`
+	Step string `json:"step"`
 }
 
 type PlayerPositionsMsg struct {

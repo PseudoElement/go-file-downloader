@@ -14,6 +14,7 @@ import (
 	downloader_module "github.com/pseudoelement/go-file-downloader/src/modules/downloader"
 	games_module "github.com/pseudoelement/go-file-downloader/src/modules/games"
 	healthcheck_module "github.com/pseudoelement/go-file-downloader/src/modules/healthcheck"
+	seabattle "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle"
 	"github.com/pseudoelement/go-file-downloader/src/utils/logger"
 	"github.com/rs/cors"
 )
@@ -46,10 +47,12 @@ func main() {
 	healthModule := healthcheck_module.NewModule(api)
 	downloaderModule := downloader_module.NewModule(api, logger)
 	gamesModule := games_module.NewModule(api)
+	seabattleModule := seabattle.NewModule(db.Conn(), api)
 
 	healthModule.SetRoutes()
 	downloaderModule.SetRoutes()
 	gamesModule.SetRoutes()
+	seabattleModule.SetRoutes()
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:     getAllowedOrigins(),
@@ -64,6 +67,9 @@ func main() {
 		Debug:            true,
 	})
 	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	api.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 

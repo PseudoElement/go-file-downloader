@@ -5,3 +5,7 @@ type Database[T any] interface {
 	Disconnect() error
 	Conn() T
 }
+
+type TableCreator interface {
+	CreateTables() error
+}

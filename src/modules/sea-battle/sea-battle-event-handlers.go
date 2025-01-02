@@ -64,6 +64,7 @@ func (eh *EventHandlers) sendMessageToClients(msg any) {
 
 func (eh *EventHandlers) handleConnection(email string) error {
 	player := eh.getPlayerByEmail(email)
+	enemy := eh.getEnemy(email)
 	if err := eh.queries().ConnectPlayerToRoom(player.info.email, player.room.name, player.info.isOwner); err != nil {
 		return err
 	}
@@ -72,8 +73,19 @@ func (eh *EventHandlers) handleConnection(email string) error {
 		Message:    fmt.Sprintf("Player %s connected to %s.", player.info.email, player.room.name),
 		ActionType: CONNECT_PLAYER,
 		Data: ConnectPlayerResp{
-			Email: player.info.email,
-			Id:    player.info.id,
+			RoomId:    eh.room.id,
+			RoomName:  eh.room.name,
+			CreatedAt: eh.room.created_at,
+			YourData: PlayerInfoForClientOnConnection{
+				PlayerId:    player.info.id,
+				PlayerEmail: player.info.email,
+				IsOwner:     player.info.isOwner,
+			},
+			EnemyData: PlayerInfoForClientOnConnection{
+				PlayerId:    enemy.info.id,
+				PlayerEmail: enemy.info.email,
+				IsOwner:     enemy.info.isOwner,
+			},
 		},
 	}
 	eh.sendMessageToClients(msg)
@@ -86,13 +98,16 @@ func (eh *EventHandlers) handleDisconnection(email string) error {
 	if err := eh.queries().DisconnectPlayerFromRoom(player.info.email, player.room.name); err != nil {
 		return err
 	}
+	delete(eh.room.players, player.info.id)
 
-	msg := SocketRespMsg[ConnectPlayerResp]{
+	msg := SocketRespMsg[DisconnectPlayerResp]{
 		Message:    fmt.Sprintf("Player %s disconnected from %s.", player.info.email, player.room.name),
 		ActionType: DISCONNECT_PLAYER,
-		Data: ConnectPlayerResp{
-			Email: player.info.email,
-			Id:    player.info.id,
+		Data: DisconnectPlayerResp{
+			RoomId:   player.room.id,
+			RoomName: player.room.name,
+			Email:    player.info.email,
+			Id:       player.info.id,
 		},
 	}
 	eh.sendMessageToClients(msg)

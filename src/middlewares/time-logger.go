@@ -19,7 +19,7 @@ func TimeLoggerCommonMW(next http.Handler) http.Handler {
 
 		duration := time.Since(now)
 
-		log.Printf("End request. Duration: %v ms.\n", duration)
+		log.Printf("End request. Duration: %v.\n", duration)
 	})
 }
 
@@ -35,6 +35,6 @@ func TimeLoggerLocalMW(next http.HandlerFunc) http.HandlerFunc {
 
 		duration := time.Since(now)
 
-		log.Printf("End request. Duration: %v ms.\n", duration)
+		log.Printf("End request. Duration: %v.\n", duration)
 	}
 }

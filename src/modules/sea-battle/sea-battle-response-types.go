@@ -7,8 +7,18 @@ type SocketRespMsg[T any] struct {
 }
 
 type ConnectPlayerResp struct {
-	Email string `json:"player_email"`
-	Id    string `json:"player_id"`
+	RoomId    string                          `json:"room_id"`
+	RoomName  string                          `json:"room_name"`
+	CreatedAt string                          `json:"created_at"`
+	YourData  PlayerInfoForClientOnConnection `json:"your_data"`
+	EnemyData PlayerInfoForClientOnConnection `json:"enemy_data"`
+}
+
+type DisconnectPlayerResp struct {
+	RoomId   string `json:"room_id"`
+	RoomName string `json:"room_name"`
+	Email    string `json:"player_email"`
+	Id       string `json:"player_id"`
 }
 
 type PlayerReadyResp struct {
@@ -32,6 +42,7 @@ type RoomsListResp struct {
 }
 
 type RoomsListRoomResp struct {
+	RoomId    string                `json:"room_id"`
 	RoomName  string                `json:"room_name"`
 	CreatedAt string                `json:"created_at"`
 	Players   []RoomsListPlayerResp `json:"players"`
@@ -39,6 +50,12 @@ type RoomsListRoomResp struct {
 
 type RoomsListPlayerResp struct {
 	PlayerId    string `json:"player_id"`
-	PlayerEmail string `json:"player_name"`
+	PlayerEmail string `json:"player_email"`
+	IsOwner     bool   `json:"is_owner"`
+}
+
+type PlayerInfoForClientOnConnection struct {
+	PlayerId    string `json:"player_id"`
+	PlayerEmail string `json:"player_email"`
 	IsOwner     bool   `json:"is_owner"`
 }

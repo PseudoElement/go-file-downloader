@@ -8,10 +8,11 @@ import (
 )
 
 type Room struct {
-	id        string
-	name      string
-	isPlaying bool
-	queries   seabattle_queries.SeaBattleQueries
+	id         string
+	name       string
+	created_at string
+	isPlaying  bool
+	queries    seabattle_queries.SeaBattleQueries
 	// key - player_id
 	players map[string]*Player
 }
@@ -25,14 +26,18 @@ type SeaBattleModule struct {
 }
 
 func NewModule(db *sql.DB, api *mux.Router) SeaBattleModule {
-	rooms := make([]Room, 0, 1000)
 	queries := seabattle_queries.New(db)
+	srv := NewSeaBattleService(queries)
+
+	if err := queries.CreateTables(); err != nil {
+		panic(err)
+	}
 
 	return SeaBattleModule{
 		db:      db,
 		api:     api,
 		queries: queries,
-		srv:     NewSeaBattleService(rooms, queries),
-		rooms:   rooms,
+		srv:     srv,
+		rooms:   srv.rooms,
 	}
 }

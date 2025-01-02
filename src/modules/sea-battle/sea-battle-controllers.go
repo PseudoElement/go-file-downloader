@@ -14,20 +14,15 @@ func (m *SeaBattleModule) _createRoomController(w http.ResponseWriter, req *http
 		return
 	}
 
-	if e, msgWithCode := m.srv.createNewRoom(params["room_name"], params["player_email"], w, req); e != nil {
-		if msgWithCode != nil {
-			api_module.FailResponseWithCode(w, *msgWithCode, 400)
-		} else {
-			api_module.FailResponse(w, e.Error(), 400)
-		}
+	if roomInfo, err := m.srv.createNewRoom(params["room_name"], params["player_email"], w, req); err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
 		return
+	} else {
+		api_module.SuccessResponse(w, roomInfo, 200)
 	}
-
-	msg := types_module.MessageJson{Message: "Room created successfully."}
-	api_module.SuccessResponse(w, msg, 200)
 }
 
-func (m *SeaBattleModule) _disconenctFromRoom(w http.ResponseWriter, req *http.Request) {
+func (m *SeaBattleModule) _disconnectFromRoom(w http.ResponseWriter, req *http.Request) {
 	params, err := api_module.MapQueryParams(req, "player_email", "room_name")
 	if err != nil {
 		api_module.FailResponse(w, err.Error(), err.Status())
@@ -39,7 +34,7 @@ func (m *SeaBattleModule) _disconenctFromRoom(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	msg := types_module.MessageJson{Message: "You disconnected to room."}
+	msg := types_module.MessageJson{Message: "You disconnected from room."}
 	api_module.SuccessResponse(w, msg, 200)
 }
 
@@ -58,8 +53,18 @@ func (m *SeaBattleModule) _connectToRoomWsController(w http.ResponseWriter, req 
 	if e := m.srv.connectUserToToom(params["room_name"], params["room_id"], params["player_email"], w, req); e != nil {
 		api_module.FailResponse(w, e.Error(), 400)
 		return
+	} else {
+		msg := types_module.MessageJson{Message: "You connected from room."}
+		api_module.SuccessResponse(w, msg, 200)
 	}
+}
 
-	msg := types_module.MessageJson{Message: "You connected to room."}
-	api_module.SuccessResponse(w, msg, 200)
+func (m *SeaBattleModule) _getRoomInfoController(w http.ResponseWriter, req *http.Request) {
+	params := api_module.MapQueryParamsSafe(req, "room_name", "player_email")
+	if room, err := m.srv.getRoomInfo(params["room_name"], params["player_email"]); err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
+		return
+	} else {
+		api_module.SuccessResponse(w, room, 200)
+	}
 }

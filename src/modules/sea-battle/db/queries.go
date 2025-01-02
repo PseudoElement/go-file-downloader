@@ -15,56 +15,13 @@ func New(db *sql.DB) SeaBattleQueries {
 	}
 }
 
-func (q SeaBattleQueries) createRoomsTable() error {
-	_, err := q.db.Exec(`
-		CREATE TABLE IF NOT EXISTS seabattle_rooms (
-			id SERIAL NOT NULL PRIMARY KEY, 
-            name TEXT,
-			positions TEXT,
-			created_at TIMESTAMP WITH TIME ZONE DEFAULT current_timestamp,
-            CONSTRAINT uc_room UNIQUE (id, name)
-		);
-	`)
-	if err != nil {
-		return fmt.Errorf("Error in CreateRoomsTable. Error: %s", err.Error())
-	}
-
-	return nil
-}
-
-/*
-resp: {
-	rooms: {
-		room_id_1: {room_name: "room_1", room_id: "room_id_1", created_at: "12 Dec 2025", players: [Player, Player]},
-		room_id_2: {room_name: "room_2", room_id: "room_id_2", created_at: "13 Dec 2025", players: [Player, Player]}
-	}
-}
-*/
-
-func (q SeaBattleQueries) createPlayersTable() error {
-	_, err := q.db.Exec(`
-		CREATE TABLE IF NOT EXISTS seabattle_players (
-			id SERIAL NOT NULL PRIMARY KEY, 
-            email TEXT,
-			room_name TEXT,
-			is_owner BOOLEAN NOT NULL,
-            CONSTRAINT uc_player UNIQUE (id, email, room_name)
-		);
-	`)
-	if err != nil {
-		return fmt.Errorf("Error in CreatePlayersTable. Error: %s", err.Error())
-	}
-
-	return nil
-}
-
-func (q SeaBattleQueries) GetRoomsList() ([]DB_RoomOnPlayerJoinRow, error) {
-	roomsData := make([]DB_RoomOnPlayerJoinRow, 0, 1000)
+func (q SeaBattleQueries) GetRoomsList() ([]DB_PlayerWithRoomJoinRow, error) {
+	roomsData := make([]DB_PlayerWithRoomJoinRow, 0, 1000)
 	rows, err := q.db.Query(`
-		SELECT r.id, r.name, r.created_at, p.email, p.id, p.is_owner
+		SELECT r.id, r.name, r.positions, r.created_at, p.email, p.id, p.is_owner
 		FROM seabattle_rooms r 
 		LEFT JOIN seabattle_players p
-		ON r.name = p.room_name;
+		ON r.room_name = p.room_name;
 	`)
 	defer rows.Close()
 
@@ -73,8 +30,16 @@ func (q SeaBattleQueries) GetRoomsList() ([]DB_RoomOnPlayerJoinRow, error) {
 	}
 
 	for rows.Next() {
-		dbRow := new(DB_RoomOnPlayerJoinRow)
-		if err := rows.Scan(&dbRow.RoomId, &dbRow.RoomName, &dbRow.CreatedAt, &dbRow.PlayerEmail, &dbRow.PlayerId, &dbRow.IsOwner); err != nil {
+		dbRow := new(DB_PlayerWithRoomJoinRow)
+		if err := rows.Scan(
+			&dbRow.RoomId,
+			&dbRow.RoomName,
+			&dbRow.RoomPositions,
+			&dbRow.CreatedAt,
+			&dbRow.PlayerEmail,
+			&dbRow.PlayerId,
+			&dbRow.IsOwner,
+		); err != nil {
 			if err == sql.ErrNoRows {
 				return roomsData, nil
 			}
@@ -85,21 +50,26 @@ func (q SeaBattleQueries) GetRoomsList() ([]DB_RoomOnPlayerJoinRow, error) {
 	return roomsData, nil
 }
 
-func (q SeaBattleQueries) CreateRoom(roomName string) error {
-	query := fmt.Sprintf("INSERT INTO seabattle_rooms(room_name) VALUES($1);")
-	_, err := q.db.Exec(query, roomName)
+func (q SeaBattleQueries) CreateRoom(roomName string) (DB_NewCreatedRoom, error) {
+	var newRoom DB_NewCreatedRoom
+	query := fmt.Sprintf(`
+		INSERT INTO seabattle_rooms(room_name) 
+		VALUES($1)
+		RETURNING id, room_name, created_at;
+	`)
+	err := q.db.QueryRow(query, roomName).Scan(&newRoom.RoomId, &newRoom.CreatedAt, &newRoom.RoomName)
 	if err != nil {
-		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
+		return newRoom, fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
 	}
 
-	return nil
+	return newRoom, nil
 }
 
 func (q SeaBattleQueries) DeleteRoom(roomName string) error {
 	query := fmt.Sprintf("DELETE FROM seabattle_rooms(room_name) VALUES($1);")
 	_, err := q.db.Exec(query, roomName)
 	if err != nil {
-		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
+		return fmt.Errorf("Error in DeleteRoom. Error: %s", err.Error())
 	}
 
 	return nil
@@ -141,7 +111,7 @@ func (q SeaBattleQueries) DisconnectPlayerFromRoom(email string, roomName string
 }
 
 func (q SeaBattleQueries) UpdatePositions(newPositions string, roomName string) error {
-	query := fmt.Sprintf("INSERT INTO seabattle_rooms(positions) VALUES($1) WHERE room_name=$2;")
+	query := fmt.Sprintf("INSERT INTO seabattle_rooms(positions) VALUES($1) WHERE =room_name$2;")
 	_, err := q.db.Exec(query, newPositions, roomName)
 	if err != nil {
 		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())

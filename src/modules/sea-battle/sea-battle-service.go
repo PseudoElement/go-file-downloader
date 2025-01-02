@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/google/uuid"
 	seabattle_queries "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle/db"
-	types_module "github.com/pseudoelement/golang-utils/src/types"
 	slice_utils_module "github.com/pseudoelement/golang-utils/src/utils/slices"
 )
 
@@ -15,15 +13,17 @@ type SeaBattleService struct {
 	queries seabattle_queries.SeaBattleQueries
 }
 
-func NewSeaBattleService(rooms []Room, queries seabattle_queries.SeaBattleQueries) SeaBattleService {
-	return SeaBattleService{
-		rooms:   rooms,
+func NewSeaBattleService(queries seabattle_queries.SeaBattleQueries) SeaBattleService {
+	srv := SeaBattleService{
+		rooms:   make([]Room, 0, 1000),
 		queries: queries,
 	}
+
+	return srv
 }
 
-func (srv *SeaBattleService) getRoomsList() (RoomsListResp, error) {
-	dbResp, err := srv.queries.GetRoomsList()
+func (this *SeaBattleService) getRoomsList() (RoomsListResp, error) {
+	dbResp, err := this.queries.GetRoomsList()
 	if err != nil {
 		return RoomsListResp{}, err
 	}
@@ -33,6 +33,7 @@ func (srv *SeaBattleService) getRoomsList() (RoomsListResp, error) {
 		room, ok := roomsList.Rooms[dbRow.RoomId]
 		if !ok {
 			room = RoomsListRoomResp{
+				RoomId:    dbRow.RoomId,
 				RoomName:  dbRow.RoomName,
 				CreatedAt: dbRow.CreatedAt,
 				Players:   make([]RoomsListPlayerResp, 0, 2),
@@ -51,38 +52,37 @@ func (srv *SeaBattleService) getRoomsList() (RoomsListResp, error) {
 
 }
 
-func (srv *SeaBattleService) createNewRoom(roomName string, playerEmail string, w http.ResponseWriter, req *http.Request) (err error, msgWithCode *types_module.MessageWithCode) {
-	if isExists, err := srv.queries.CheckRoomAlreadyExists(roomName); err != nil {
-		return err, nil
+func (this *SeaBattleService) createNewRoom(roomName string, playerEmail string, w http.ResponseWriter, req *http.Request) (ConnectPlayerResp, error) {
+	if isExists, err := this.queries.CheckRoomAlreadyExists(roomName); err != nil {
+		return ConnectPlayerResp{}, err
 	} else if isExists {
-		return nil, &types_module.MessageWithCode{
-			Message: fmt.Sprintf("Room with name %s elready exists.", roomName),
-			Code:    ROOM_ALREADY_EXISTS,
-		}
+		return ConnectPlayerResp{}, fmt.Errorf("Room with name %s already exists.", roomName)
 	}
 
-	roomId := uuid.New().String()
+	room, err := this.queries.CreateRoom(roomName)
+	if err != nil {
+		return ConnectPlayerResp{}, nil
+	}
+
 	players := make(map[string]*Player)
 
 	newRoom := Room{
-		id:        roomId,
-		name:      roomName,
-		players:   players,
-		isPlaying: false,
-		queries:   srv.queries,
+		id:         room.RoomId,
+		name:       room.RoomName,
+		created_at: room.CreatedAt,
+		players:    players,
+		isPlaying:  false,
+		queries:    this.queries,
 	}
+	this.rooms = append(this.rooms, newRoom)
 
-	if err := srv.connectUserToToom(newRoom.name, newRoom.id, playerEmail, w, req); err != nil {
-		return err, nil
-	}
+	roomInfo, err := this.getRoomInfo(roomName, playerEmail)
 
-	srv.rooms = append(srv.rooms, newRoom)
-
-	return nil, nil
+	return roomInfo, err
 }
 
-func (srv *SeaBattleService) connectUserToToom(roomName string, roomId string, playerEmail string, w http.ResponseWriter, req *http.Request) error {
-	room, e := srv.findRoom(roomName, roomId)
+func (this *SeaBattleService) connectUserToToom(roomName string, roomId string, playerEmail string, w http.ResponseWriter, req *http.Request) error {
+	room, e := this.findRoom(roomName, roomId)
 	if e != nil {
 		return e
 	}
@@ -91,31 +91,29 @@ func (srv *SeaBattleService) connectUserToToom(roomName string, roomId string, p
 	}
 
 	player := NewPlayer(playerEmail, room, w, req)
+	go player.Broadcast()
+
 	if e := player.Connect(); e != nil {
 		return e
 	}
-
 	// add player to room
 	room.players[player.info.id] = player
-
-	go player.Broadcast()
 
 	return nil
 }
 
-func (srv *SeaBattleService) disconnectUserFromRoom(roomId string, playerEmail string, w http.ResponseWriter, req *http.Request) error {
-	room, e := srv.findRoom("", roomId)
+func (this *SeaBattleService) disconnectUserFromRoom(roomId string, playerEmail string, w http.ResponseWriter, req *http.Request) error {
+	room, e := this.findRoom("", roomId)
 	if e != nil {
 		return e
 	}
 
-	playersOfRoom := srv.getPlayersFromRoom(playerEmail, room)
+	playersOfRoom := this.getPlayersFromRoom(playerEmail, room)
 
 	err := playersOfRoom.CurrentPlayer.Disconnect()
 	if err != nil {
 		return err
 	}
-	delete(room.players, playersOfRoom.CurrentPlayer.info.id)
 
 	if playersOfRoom.CurrentPlayer.info.isOwner && playersOfRoom.Enemy != nil {
 		playersOfRoom.Enemy.MakeAsOwner()
@@ -124,8 +122,8 @@ func (srv *SeaBattleService) disconnectUserFromRoom(roomId string, playerEmail s
 	return nil
 }
 
-func (srv *SeaBattleService) findRoom(name string, id string) (Room, error) {
-	room, err := slice_utils_module.Find(srv.rooms, func(r Room) bool {
+func (this *SeaBattleService) findRoom(name string, id string) (Room, error) {
+	room, err := slice_utils_module.Find(this.rooms, func(r Room) bool {
 		return r.id == id || r.name == name
 	})
 
@@ -140,7 +138,31 @@ func (srv *SeaBattleService) findRoom(name string, id string) (Room, error) {
 	return room, nil
 }
 
-func (srv *SeaBattleService) getPlayersFromRoom(playerEmail string, room Room) RoomPlayers {
+func (this *SeaBattleService) getRoomInfo(roomName string, playerEmail string) (ConnectPlayerResp, error) {
+	room, err := this.findRoom(roomName, "")
+	playersOfRoom := this.getPlayersFromRoom(playerEmail, room)
+	if err != nil {
+		return ConnectPlayerResp{}, err
+	}
+
+	return ConnectPlayerResp{
+		RoomId:    room.id,
+		RoomName:  room.name,
+		CreatedAt: room.created_at,
+		YourData: PlayerInfoForClientOnConnection{
+			PlayerId:    playersOfRoom.CurrentPlayer.info.id,
+			PlayerEmail: playersOfRoom.CurrentPlayer.info.email,
+			IsOwner:     playersOfRoom.CurrentPlayer.info.isOwner,
+		},
+		EnemyData: PlayerInfoForClientOnConnection{
+			PlayerId:    playersOfRoom.Enemy.info.id,
+			PlayerEmail: playersOfRoom.Enemy.info.email,
+			IsOwner:     playersOfRoom.Enemy.info.isOwner,
+		},
+	}, nil
+}
+
+func (this *SeaBattleService) getPlayersFromRoom(playerEmail string, room Room) RoomPlayers {
 	playersOfRoom := RoomPlayers{}
 	for _, player := range room.players {
 		if player.info.email == playerEmail {
