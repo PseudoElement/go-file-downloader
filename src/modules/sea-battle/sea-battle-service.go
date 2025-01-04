@@ -91,11 +91,12 @@ func (this *SeaBattleService) connectUserToToom(roomName string, roomId string, 
 	}
 
 	player := NewPlayer(playerEmail, room, w, req)
-	go player.Broadcast()
-
+	// @TODO somehow handle user connection on client
 	if e := player.Connect(); e != nil {
 		return e
 	}
+	go player.Broadcast()
+
 	// add player to room
 	room.players[player.info.id] = player
 
@@ -108,7 +109,10 @@ func (this *SeaBattleService) disconnectUserFromRoom(roomId string, playerEmail 
 		return e
 	}
 
-	playersOfRoom := this.getPlayersFromRoom(playerEmail, room)
+	playersOfRoom, isEmpty := this.getPlayersFromRoom(playerEmail, room)
+	if isEmpty {
+		return fmt.Errorf("Room is empty! You can't disconnect.")
+	}
 
 	err := playersOfRoom.CurrentPlayer.Disconnect()
 	if err != nil {
@@ -140,9 +144,18 @@ func (this *SeaBattleService) findRoom(name string, id string) (Room, error) {
 
 func (this *SeaBattleService) getRoomInfo(roomName string, playerEmail string) (ConnectPlayerResp, error) {
 	room, err := this.findRoom(roomName, "")
-	playersOfRoom := this.getPlayersFromRoom(playerEmail, room)
+	playersOfRoom, isEmpty := this.getPlayersFromRoom(playerEmail, room)
 	if err != nil {
 		return ConnectPlayerResp{}, err
+	}
+	if isEmpty {
+		return ConnectPlayerResp{
+			RoomId:    room.id,
+			RoomName:  room.name,
+			CreatedAt: room.created_at,
+			YourData:  PlayerInfoForClientOnConnection{},
+			EnemyData: PlayerInfoForClientOnConnection{},
+		}, nil
 	}
 
 	return ConnectPlayerResp{
@@ -162,8 +175,12 @@ func (this *SeaBattleService) getRoomInfo(roomName string, playerEmail string) (
 	}, nil
 }
 
-func (this *SeaBattleService) getPlayersFromRoom(playerEmail string, room Room) RoomPlayers {
+func (this *SeaBattleService) getPlayersFromRoom(playerEmail string, room Room) (RoomPlayers, bool) {
 	playersOfRoom := RoomPlayers{}
+	if len(room.players) == 0 {
+		return playersOfRoom, true
+	}
+
 	for _, player := range room.players {
 		if player.info.email == playerEmail {
 			playersOfRoom.CurrentPlayer = player
@@ -171,6 +188,7 @@ func (this *SeaBattleService) getPlayersFromRoom(playerEmail string, room Room) 
 			playersOfRoom.Enemy = player
 		}
 	}
+	fmt.Println("playersOfRoom ==> ", playersOfRoom)
 
-	return playersOfRoom
+	return playersOfRoom, false
 }

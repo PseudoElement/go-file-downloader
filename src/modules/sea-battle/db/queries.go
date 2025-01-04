@@ -57,7 +57,7 @@ func (q SeaBattleQueries) CreateRoom(roomName string) (DB_NewCreatedRoom, error)
 		VALUES($1)
 		RETURNING id, room_name, created_at;
 	`)
-	err := q.db.QueryRow(query, roomName).Scan(&newRoom.RoomId, &newRoom.CreatedAt, &newRoom.RoomName)
+	err := q.db.QueryRow(query, roomName).Scan(&newRoom.RoomId, &newRoom.RoomName, &newRoom.CreatedAt)
 	if err != nil {
 		return newRoom, fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
 	}

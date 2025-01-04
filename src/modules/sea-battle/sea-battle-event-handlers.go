@@ -129,6 +129,10 @@ func (eh *EventHandlers) handlePlayerSetPositions(email string, playerPositions 
 	msg := SocketRespMsg[PlayerSetPositionsResp]{
 		Message:    fmt.Sprintf("Player %s set positions.", player.info.email),
 		ActionType: SET_PLAYER_POSITIONS,
+		Data: PlayerSetPositionsResp{
+			Email: player.info.email,
+			Id:    player.info.id,
+		},
 	}
 	for _, player := range eh.room.players {
 		if err := player.Conn().WriteJSON(msg); err != nil {
@@ -161,7 +165,7 @@ func (eh *EventHandlers) handlePlayerStep(email string, step NewStepReqMsg) erro
 
 func (eh *EventHandlers) handleAlreadyChecked(player *Player, enemy *Player, step NewStepReqMsg) error {
 	steppingPlayerMsg := SocketRespMsg[PlayerStepResp]{
-		Message:    "You've already selected this cell. Try again!",
+		Message:    fmt.Sprintf("Player %s already checked this cell. Next time check another one!", player.info.email),
 		ActionType: STEP,
 		Data: PlayerStepResp{
 			Email:  player.info.email,
@@ -206,9 +210,13 @@ func (eh *EventHandlers) handleHit(player *Player, enemy *Player, step NewStepRe
 	eh.sendMessageToClients(msg)
 
 	if eh.isWin(player.info.email) {
-		winMsg := SocketRespMsg[any]{
+		winMsg := SocketRespMsg[GameWinResp]{
 			Message:    fmt.Sprintf("Player %s won the game.", player.info.email),
 			ActionType: WIN_GAME,
+			Data: GameWinResp{
+				WinnerEmail: player.info.email,
+				WinnerId:    player.info.id,
+			},
 		}
 		eh.sendMessageToClients(winMsg)
 	}

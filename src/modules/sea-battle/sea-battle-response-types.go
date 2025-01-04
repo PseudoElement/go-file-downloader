@@ -26,6 +26,11 @@ type PlayerReadyResp struct {
 	Id    string `json:"player_id"`
 }
 
+type GameWinResp struct {
+	WinnerEmail string `json:"winner_email"`
+	WinnerId    string `json:"winner_id"`
+}
+
 type PlayerStepResp struct {
 	Email string `json:"player_email"`
 	Id    string `json:"player_id"`
@@ -34,7 +39,10 @@ type PlayerStepResp struct {
 	Result string `json:"step_result"`
 }
 
-type PlayerSetPositionsResp struct{}
+type PlayerSetPositionsResp struct {
+	Email string `json:"player_email"`
+	Id    string `json:"player_id"`
+}
 
 type RoomsListResp struct {
 	// key is roomId
