@@ -2,24 +2,52 @@ package seabattle
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
+	"github.com/google/uuid"
 	seabattle_queries "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle/db"
 	slice_utils_module "github.com/pseudoelement/golang-utils/src/utils/slices"
 )
 
 type SeaBattleService struct {
-	rooms   []Room
+	rooms   []*Room
 	queries seabattle_queries.SeaBattleQueries
 }
 
 func NewSeaBattleService(queries seabattle_queries.SeaBattleQueries) SeaBattleService {
-	srv := SeaBattleService{
-		rooms:   make([]Room, 0, 1000),
-		queries: queries,
-	}
+	srv := SeaBattleService{queries: queries}
+	roomsFromDB := srv.loadExistingRoomsFromDB()
+	srv.rooms = roomsFromDB
 
 	return srv
+}
+
+func (this *SeaBattleService) loadExistingRoomsFromDB() []*Room {
+	rooms := make([]*Room, 0, 100)
+	roomsList, err := this.getRoomsList()
+	if err != nil {
+		log.Println("loadExistingRoomsFromDB_getRoomsList_ERROR ===> ", err.Error())
+		return rooms
+	}
+
+	for _, room := range roomsList.Rooms {
+		newRoom := &Room{
+			id:         room.RoomId,
+			name:       room.RoomName,
+			created_at: room.CreatedAt,
+			isPlaying:  false,
+			queries:    this.queries,
+		}
+
+		for _, p := range room.Players {
+			newRoom.players[p.PlayerId] = NewPlayer(p.PlayerEmail, p.PlayerId, newRoom, MockRespWriter(), MockHttpReq())
+		}
+
+		rooms = append(rooms, newRoom)
+	}
+
+	return rooms
 }
 
 func (this *SeaBattleService) getRoomsList() (RoomsListResp, error) {
@@ -49,10 +77,9 @@ func (this *SeaBattleService) getRoomsList() (RoomsListResp, error) {
 	}
 
 	return roomsList, nil
-
 }
 
-func (this *SeaBattleService) createNewRoom(roomName string, playerEmail string, w http.ResponseWriter, req *http.Request) (ConnectPlayerResp, error) {
+func (this *SeaBattleService) createNewRoom(roomName string, playerEmail string) (ConnectPlayerResp, error) {
 	if isExists, err := this.queries.CheckRoomAlreadyExists(roomName); err != nil {
 		return ConnectPlayerResp{}, err
 	} else if isExists {
@@ -66,7 +93,7 @@ func (this *SeaBattleService) createNewRoom(roomName string, playerEmail string,
 
 	players := make(map[string]*Player)
 
-	newRoom := Room{
+	newRoom := &Room{
 		id:         room.RoomId,
 		name:       room.RoomName,
 		created_at: room.CreatedAt,
@@ -90,26 +117,23 @@ func (this *SeaBattleService) connectUserToToom(roomName string, roomId string, 
 		return fmt.Errorf("Room is full.")
 	}
 
-	player := NewPlayer(playerEmail, room, w, req)
-	// @TODO somehow handle user connection on client
+	id := uuid.New().String()
+	player := NewPlayer(playerEmail, id, room, w, req)
 	if e := player.Connect(); e != nil {
 		return e
 	}
 	go player.Broadcast()
 
-	// add player to room
-	room.players[player.info.id] = player
-
 	return nil
 }
 
-func (this *SeaBattleService) disconnectUserFromRoom(roomId string, playerEmail string, w http.ResponseWriter, req *http.Request) error {
+func (this *SeaBattleService) disconnectUserFromRoom(roomId string, playerEmail string) error {
 	room, e := this.findRoom("", roomId)
 	if e != nil {
 		return e
 	}
 
-	playersOfRoom, isEmpty := this.getPlayersFromRoom(playerEmail, room)
+	playersOfRoom, isEmpty := GetPlayersFromRoom(playerEmail, room)
 	if isEmpty {
 		return fmt.Errorf("Room is empty! You can't disconnect.")
 	}
@@ -126,16 +150,16 @@ func (this *SeaBattleService) disconnectUserFromRoom(roomId string, playerEmail 
 	return nil
 }
 
-func (this *SeaBattleService) findRoom(name string, id string) (Room, error) {
-	room, err := slice_utils_module.Find(this.rooms, func(r Room) bool {
+func (this *SeaBattleService) findRoom(name string, id string) (*Room, error) {
+	room, err := slice_utils_module.Find(this.rooms, func(r *Room) bool {
 		return r.id == id || r.name == name
 	})
 
 	if err != nil {
 		if name != "" {
-			return Room{}, fmt.Errorf("Room with name %s not found.", name)
+			return nil, fmt.Errorf("Room with name %s not found.", name)
 		} else {
-			return Room{}, fmt.Errorf("Room with id %s not found.", id)
+			return nil, fmt.Errorf("Room with id %s not found.", id)
 		}
 	}
 
@@ -144,7 +168,7 @@ func (this *SeaBattleService) findRoom(name string, id string) (Room, error) {
 
 func (this *SeaBattleService) getRoomInfo(roomName string, playerEmail string) (ConnectPlayerResp, error) {
 	room, err := this.findRoom(roomName, "")
-	playersOfRoom, isEmpty := this.getPlayersFromRoom(playerEmail, room)
+	playersOfRoom, isEmpty := GetPlayersFromRoom(playerEmail, room)
 	if err != nil {
 		return ConnectPlayerResp{}, err
 	}
@@ -173,22 +197,4 @@ func (this *SeaBattleService) getRoomInfo(roomName string, playerEmail string) (
 			IsOwner:     playersOfRoom.Enemy.info.isOwner,
 		},
 	}, nil
-}
-
-func (this *SeaBattleService) getPlayersFromRoom(playerEmail string, room Room) (RoomPlayers, bool) {
-	playersOfRoom := RoomPlayers{}
-	if len(room.players) == 0 {
-		return playersOfRoom, true
-	}
-
-	for _, player := range room.players {
-		if player.info.email == playerEmail {
-			playersOfRoom.CurrentPlayer = player
-		} else {
-			playersOfRoom.Enemy = player
-		}
-	}
-	fmt.Println("playersOfRoom ==> ", playersOfRoom)
-
-	return playersOfRoom, false
 }

@@ -44,6 +44,8 @@ type PlayerSetPositionsResp struct {
 	Id    string `json:"player_id"`
 }
 
+type ErrorResp struct{}
+
 type RoomsListResp struct {
 	// key is roomId
 	Rooms map[string]RoomsListRoomResp `json:"rooms"`

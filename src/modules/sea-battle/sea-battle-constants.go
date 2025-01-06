@@ -15,12 +15,14 @@ const CELL_WITH_SHIP_SYMBOL = "+"
 const TOTAL_CELL_WITH_SHIPS_COUNT = 20
 
 const (
+	// FOR ALL
 	CONNECT_PLAYER       = "CONNECT_PLAYER"
 	DISCONNECT_PLAYER    = "DISCONNECT_PLAYER"
 	STEP                 = "STEP"
 	SET_PLAYER_POSITIONS = "SET_PLAYER_POSITIONS"
 	WIN_GAME             = "WIN_GAME"
-	ERROR                = "ERROR"
+	// FOR SINGLE USER
+	ERROR = "ERROR"
 )
 
 // Player step results

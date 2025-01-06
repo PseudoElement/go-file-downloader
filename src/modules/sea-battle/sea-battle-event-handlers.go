@@ -11,10 +11,10 @@ import (
 )
 
 type EventHandlers struct {
-	room Room
+	room *Room
 }
 
-func NewEventHandlers(room Room) EventHandlers {
+func NewEventHandlers(room *Room) EventHandlers {
 	return EventHandlers{room: room}
 }
 
@@ -25,7 +25,11 @@ func (eh *EventHandlers) HandleNewMsg(msgBody SocketRequestMsg[any]) error {
 	case PlayerPositionsMsg:
 		return eh.handlePlayerSetPositions(msgBody.Email, data.PlayerPositions)
 	default:
-		return fmt.Errorf("Unknown msgBody type.")
+		fmt.Errorf("Unknown msgBody type.")
+		eh.sendMessageToClients(struct {
+			Message string `json:"message"`
+		}{Message: "Unknown msgBody type."})
+		return nil
 	}
 }
 
@@ -69,6 +73,23 @@ func (eh *EventHandlers) handleConnection(email string) error {
 		return err
 	}
 
+	var yourData PlayerInfoForClientOnConnection
+	var enemyData PlayerInfoForClientOnConnection
+	if player != nil {
+		yourData = PlayerInfoForClientOnConnection{
+			PlayerId:    player.info.id,
+			PlayerEmail: player.info.email,
+			IsOwner:     player.info.isOwner,
+		}
+	}
+	if enemy != nil {
+		yourData = PlayerInfoForClientOnConnection{
+			PlayerId:    enemy.info.id,
+			PlayerEmail: enemy.info.email,
+			IsOwner:     enemy.info.isOwner,
+		}
+	}
+
 	msg := SocketRespMsg[ConnectPlayerResp]{
 		Message:    fmt.Sprintf("Player %s connected to %s.", player.info.email, player.room.name),
 		ActionType: CONNECT_PLAYER,
@@ -76,16 +97,8 @@ func (eh *EventHandlers) handleConnection(email string) error {
 			RoomId:    eh.room.id,
 			RoomName:  eh.room.name,
 			CreatedAt: eh.room.created_at,
-			YourData: PlayerInfoForClientOnConnection{
-				PlayerId:    player.info.id,
-				PlayerEmail: player.info.email,
-				IsOwner:     player.info.isOwner,
-			},
-			EnemyData: PlayerInfoForClientOnConnection{
-				PlayerId:    enemy.info.id,
-				PlayerEmail: enemy.info.email,
-				IsOwner:     enemy.info.isOwner,
-			},
+			YourData:  yourData,
+			EnemyData: enemyData,
 		},
 	}
 	eh.sendMessageToClients(msg)

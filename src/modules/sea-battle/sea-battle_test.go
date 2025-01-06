@@ -579,7 +579,7 @@ func TestIsShipKilled(t *testing.T) {
 		J1+*,J2,J3+,J4,J5+*,J6,J7,J8,J9,J10+*,
 		`}, NewStepReqMsg{"I10"}, true, "10_COL_3cell_bottom_kill"},
 	}
-	eh := NewEventHandlers(Room{})
+	eh := NewEventHandlers(&Room{})
 
 	for _, tt := range testsOfRows {
 		answer := eh.isShipKilled(tt.enemy, tt.step)

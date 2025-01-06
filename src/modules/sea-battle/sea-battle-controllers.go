@@ -14,7 +14,7 @@ func (m *SeaBattleModule) _createRoomController(w http.ResponseWriter, req *http
 		return
 	}
 
-	if roomInfo, err := m.srv.createNewRoom(params["room_name"], params["player_email"], w, req); err != nil {
+	if roomInfo, err := m.srv.createNewRoom(params["room_name"], params["player_email"]); err != nil {
 		api_module.FailResponse(w, err.Error(), 400)
 		return
 	} else {
@@ -29,7 +29,7 @@ func (m *SeaBattleModule) _disconnectFromRoom(w http.ResponseWriter, req *http.R
 		return
 	}
 
-	if err := m.srv.disconnectUserFromRoom(params["player_email"], params["room_name"], w, req); err != nil {
+	if err := m.srv.disconnectUserFromRoom(params["player_email"], params["room_name"]); err != nil {
 		api_module.FailResponse(w, err.Error(), 400)
 		return
 	}

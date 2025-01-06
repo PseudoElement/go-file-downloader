@@ -2,12 +2,12 @@ package seabattle
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	seabattle_queries "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle/db"
 	slice_utils_module "github.com/pseudoelement/golang-utils/src/utils/slices"
@@ -22,7 +22,7 @@ type PlayerInfo struct {
 type Player struct {
 	info          PlayerInfo
 	positions     string
-	room          Room
+	room          *Room
 	eventHandlers EventHandlers
 	conn          *websocket.Conn
 	w             http.ResponseWriter
@@ -31,12 +31,11 @@ type Player struct {
 
 func NewPlayer(
 	email string,
-	room Room,
+	id string,
+	room *Room,
 	w http.ResponseWriter,
 	req *http.Request,
 ) *Player {
-	id := uuid.New().String()
-
 	return &Player{
 		info: PlayerInfo{
 			email:   email,
@@ -79,14 +78,54 @@ func (p *Player) Connect() error {
 
 	p.conn = conn
 	// add player in room.players map
-	// p.room.players[p.info.id] = p
+	p.room.players[p.info.id] = p
 	if err := p.eventHandlers.handleConnection(p.info.email); err != nil {
 		return err
 	}
 
-	log.Printf("Client %s connected to %s.", p.info.email, p.room.name)
+	if err := p.sendMsgToClientOnConnection(); err != nil {
+		return err
+	}
+
+	log.Printf("Client %s connected to room `%s.`", p.info.email, p.room.name)
 
 	return nil
+}
+
+func (p *Player) sendMsgToClientOnConnection() error {
+	playersOfRoom, isEmpty := GetPlayersFromRoom(p.info.email, p.room)
+	if isEmpty {
+		return fmt.Errorf("Room is empty! You can't disconnect.")
+	}
+
+	var enemyData PlayerInfoForClientOnConnection
+	if playersOfRoom.Enemy != nil {
+		enemyData = PlayerInfoForClientOnConnection{
+			PlayerId:    playersOfRoom.Enemy.info.id,
+			PlayerEmail: playersOfRoom.Enemy.info.email,
+			IsOwner:     playersOfRoom.Enemy.info.isOwner,
+		}
+	}
+
+	msg := SocketRespMsg[ConnectPlayerResp]{
+		Message:    fmt.Sprintf("Player %s connected to %s.", p.info.email, p.room.name),
+		ActionType: CONNECT_PLAYER,
+		Data: ConnectPlayerResp{
+			RoomId:    p.room.id,
+			RoomName:  p.room.name,
+			CreatedAt: p.room.created_at,
+			YourData: PlayerInfoForClientOnConnection{
+				PlayerId:    playersOfRoom.Enemy.info.id,
+				PlayerEmail: playersOfRoom.Enemy.info.email,
+				IsOwner:     playersOfRoom.Enemy.info.isOwner,
+			},
+			EnemyData: enemyData,
+		},
+	}
+
+	err := p.Conn().WriteJSON(msg)
+
+	return err
 }
 
 func (p *Player) Conn() *websocket.Conn {
@@ -94,7 +133,7 @@ func (p *Player) Conn() *websocket.Conn {
 }
 
 func (p *Player) Disconnect() error {
-	if err := p.conn.Close(); err != nil {
+	if err := p.Conn().Close(); err != nil {
 		return err
 	}
 	if err := p.eventHandlers.handleDisconnection(p.info.email); err != nil {
@@ -108,19 +147,20 @@ func (p *Player) Broadcast() {
 	defer p.Disconnect()
 
 	for {
-		_, bytesData, err := p.conn.ReadMessage()
+		_, bytesData, err := p.Conn().ReadMessage()
+
 		if err != nil {
-			log.Println("Broadcast_ReadMessage err: ", err)
+			log.Println("Broadcast_ReadMessage err =====> ", err)
 			return
 		}
 
 		var msgBody SocketRequestMsg[any]
 		if err := json.Unmarshal(bytesData, &msgBody); err != nil {
-			log.Println("Broadcast_Unmarshal err: ", err.Error())
+			log.Println("Broadcast_Unmarshal =====> ", err.Error())
 			return
 		}
 		if err = p.eventHandlers.HandleNewMsg(msgBody); err != nil {
-			log.Println("Broadcast_p.eventHandlers.HandleNewMsg err: ", err.Error())
+			log.Println("Broadcast_p.eventHandlers.HandleNewMsg  =====> ", err.Error())
 			return
 		}
 

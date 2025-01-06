@@ -18,7 +18,7 @@ func New(db *sql.DB) SeaBattleQueries {
 func (q SeaBattleQueries) GetRoomsList() ([]DB_PlayerWithRoomJoinRow, error) {
 	roomsData := make([]DB_PlayerWithRoomJoinRow, 0, 1000)
 	rows, err := q.db.Query(`
-		SELECT r.id, r.name, r.positions, r.created_at, p.email, p.id, p.is_owner
+		SELECT r.id, r.room_name, r.positions, r.created_at, p.email, p.id, p.is_owner
 		FROM seabattle_rooms r 
 		LEFT JOIN seabattle_players p
 		ON r.room_name = p.room_name;
@@ -53,11 +53,11 @@ func (q SeaBattleQueries) GetRoomsList() ([]DB_PlayerWithRoomJoinRow, error) {
 func (q SeaBattleQueries) CreateRoom(roomName string) (DB_NewCreatedRoom, error) {
 	var newRoom DB_NewCreatedRoom
 	query := fmt.Sprintf(`
-		INSERT INTO seabattle_rooms(room_name) 
-		VALUES($1)
+		INSERT INTO seabattle_rooms(room_name, positions) 
+		VALUES($1, $2)
 		RETURNING id, room_name, created_at;
 	`)
-	err := q.db.QueryRow(query, roomName).Scan(&newRoom.RoomId, &newRoom.RoomName, &newRoom.CreatedAt)
+	err := q.db.QueryRow(query, roomName, "").Scan(&newRoom.RoomId, &newRoom.RoomName, &newRoom.CreatedAt)
 	if err != nil {
 		return newRoom, fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
 	}
@@ -92,7 +92,7 @@ func (q SeaBattleQueries) CheckRoomAlreadyExists(roomName string) (bool, error) 
 
 func (q SeaBattleQueries) ConnectPlayerToRoom(email string, roomName string, isOwner bool) error {
 	query := fmt.Sprintf("INSERT INTO seabattle_players(email, room_name, is_owner) VALUES($1, $2, $3);")
-	_, err := q.db.Exec(query, email, roomName)
+	_, err := q.db.Exec(query, email, roomName, isOwner)
 	if err != nil {
 		return fmt.Errorf("Error in ConnectPlayerToRoom. Error: %s", err.Error())
 	}
