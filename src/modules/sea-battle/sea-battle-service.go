@@ -19,6 +19,7 @@ func NewSeaBattleService(queries seabattle_queries.SeaBattleQueries) SeaBattleSe
 	srv := SeaBattleService{queries: queries}
 	roomsFromDB := srv.loadExistingRoomsFromDB()
 	srv.rooms = roomsFromDB
+	fmt.Println("ROOMS_FROM_DB ===> ", srv.rooms)
 
 	return srv
 }
@@ -38,9 +39,10 @@ func (this *SeaBattleService) loadExistingRoomsFromDB() []*Room {
 			created_at: room.CreatedAt,
 			isPlaying:  false,
 			queries:    this.queries,
+			players:    map[string]*Player{},
 		}
 
-		for _, p := range room.Players {
+		for _, p := range *room.Players {
 			newRoom.players[p.PlayerId] = NewPlayer(p.PlayerEmail, p.PlayerId, newRoom, MockRespWriter(), MockHttpReq())
 		}
 
@@ -64,8 +66,9 @@ func (this *SeaBattleService) getRoomsList() (RoomsListResp, error) {
 				RoomId:    dbRow.RoomId,
 				RoomName:  dbRow.RoomName,
 				CreatedAt: dbRow.CreatedAt,
-				Players:   make([]RoomsListPlayerResp, 0, 2),
+				Players:   new([]RoomsListPlayerResp),
 			}
+			roomsList.Rooms[room.RoomId] = room
 		}
 
 		player := RoomsListPlayerResp{
@@ -73,7 +76,7 @@ func (this *SeaBattleService) getRoomsList() (RoomsListResp, error) {
 			PlayerEmail: dbRow.PlayerEmail,
 			IsOwner:     dbRow.IsOwner,
 		}
-		room.Players = append(room.Players, player)
+		*room.Players = append(*room.Players, player)
 	}
 
 	return roomsList, nil
@@ -168,10 +171,14 @@ func (this *SeaBattleService) findRoom(name string, id string) (*Room, error) {
 
 func (this *SeaBattleService) getRoomInfo(roomName string, playerEmail string) (ConnectPlayerResp, error) {
 	room, err := this.findRoom(roomName, "")
+	if err != nil {
+		return ConnectPlayerResp{}, err
+	}
 	playersOfRoom, isEmpty := GetPlayersFromRoom(playerEmail, room)
 	if err != nil {
 		return ConnectPlayerResp{}, err
 	}
+
 	if isEmpty {
 		return ConnectPlayerResp{
 			RoomId:    room.id,
@@ -182,19 +189,36 @@ func (this *SeaBattleService) getRoomInfo(roomName string, playerEmail string) (
 		}, nil
 	}
 
+	var yourData PlayerInfoForClientOnConnection
+	var enemyData PlayerInfoForClientOnConnection
+	if playersOfRoom.CurrentPlayer != nil {
+		yourData = PlayerInfoForClientOnConnection{
+			PlayerId:    playersOfRoom.CurrentPlayer.info.id,
+			PlayerEmail: playersOfRoom.CurrentPlayer.info.email,
+			IsOwner:     playersOfRoom.CurrentPlayer.info.isOwner,
+		}
+	}
+	if playersOfRoom.Enemy != nil {
+		enemyData = PlayerInfoForClientOnConnection{
+			PlayerId:    playersOfRoom.Enemy.info.id,
+			PlayerEmail: playersOfRoom.Enemy.info.email,
+			IsOwner:     playersOfRoom.Enemy.info.isOwner,
+		}
+	}
+
 	return ConnectPlayerResp{
 		RoomId:    room.id,
 		RoomName:  room.name,
 		CreatedAt: room.created_at,
 		YourData: PlayerInfoForClientOnConnection{
-			PlayerId:    playersOfRoom.CurrentPlayer.info.id,
-			PlayerEmail: playersOfRoom.CurrentPlayer.info.email,
-			IsOwner:     playersOfRoom.CurrentPlayer.info.isOwner,
+			PlayerId:    yourData.PlayerId,
+			PlayerEmail: yourData.PlayerEmail,
+			IsOwner:     yourData.IsOwner,
 		},
 		EnemyData: PlayerInfoForClientOnConnection{
-			PlayerId:    playersOfRoom.Enemy.info.id,
-			PlayerEmail: playersOfRoom.Enemy.info.email,
-			IsOwner:     playersOfRoom.Enemy.info.isOwner,
+			PlayerId:    enemyData.PlayerId,
+			PlayerEmail: enemyData.PlayerEmail,
+			IsOwner:     enemyData.IsOwner,
 		},
 	}, nil
 }

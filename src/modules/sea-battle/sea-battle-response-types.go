@@ -52,10 +52,10 @@ type RoomsListResp struct {
 }
 
 type RoomsListRoomResp struct {
-	RoomId    string                `json:"room_id"`
-	RoomName  string                `json:"room_name"`
-	CreatedAt string                `json:"created_at"`
-	Players   []RoomsListPlayerResp `json:"players"`
+	RoomId    string                 `json:"room_id"`
+	RoomName  string                 `json:"room_name"`
+	CreatedAt string                 `json:"created_at"`
+	Players   *[]RoomsListPlayerResp `json:"players"`
 }
 
 type RoomsListPlayerResp struct {

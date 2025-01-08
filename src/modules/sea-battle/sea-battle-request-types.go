@@ -1,8 +1,9 @@
 package seabattle
 
 type SocketRequestMsg[T any] struct {
-	Email string `json:"player_email"`
-	Data  T      `json:"data"`
+	Email      string `json:"player_email"`
+	ActionType string `json:"action_type"`
+	Data       T      `json:"data"`
 }
 
 type NewStepReqMsg struct {

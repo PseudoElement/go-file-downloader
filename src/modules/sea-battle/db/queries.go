@@ -30,7 +30,7 @@ func (q SeaBattleQueries) GetRoomsList() ([]DB_PlayerWithRoomJoinRow, error) {
 	}
 
 	for rows.Next() {
-		dbRow := new(DB_PlayerWithRoomJoinRow)
+		dbRow := DB_PlayerWithRoomJoinRow{}
 		if err := rows.Scan(
 			&dbRow.RoomId,
 			&dbRow.RoomName,
@@ -45,6 +45,8 @@ func (q SeaBattleQueries) GetRoomsList() ([]DB_PlayerWithRoomJoinRow, error) {
 			}
 			return nil, err
 		}
+
+		roomsData = append(roomsData, dbRow)
 	}
 
 	return roomsData, nil
@@ -80,6 +82,21 @@ func (q SeaBattleQueries) CheckRoomAlreadyExists(roomName string) (bool, error) 
 	row := q.db.QueryRow("SELECT * FROM seabattle_rooms WHERE room_name=$1;", roomName)
 
 	if err := row.Scan(&room); err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		} else {
+			return true, err
+		}
+	}
+
+	return true, nil
+}
+
+func (q SeaBattleQueries) CheckPlayerAlreadyExists(playerEmail string) (bool, error) {
+	var player any
+	row := q.db.QueryRow("SELECT * FROM seabattle_player WHERE email=$1;", playerEmail)
+
+	if err := row.Scan(&player); err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil
 		} else {

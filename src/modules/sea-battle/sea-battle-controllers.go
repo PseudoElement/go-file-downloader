@@ -23,13 +23,13 @@ func (m *SeaBattleModule) _createRoomController(w http.ResponseWriter, req *http
 }
 
 func (m *SeaBattleModule) _disconnectFromRoom(w http.ResponseWriter, req *http.Request) {
-	params, err := api_module.MapQueryParams(req, "player_email", "room_name")
+	params, err := api_module.MapQueryParams(req, "player_email", "room_id")
 	if err != nil {
 		api_module.FailResponse(w, err.Error(), err.Status())
 		return
 	}
 
-	if err := m.srv.disconnectUserFromRoom(params["player_email"], params["room_name"]); err != nil {
+	if err := m.srv.disconnectUserFromRoom(params["room_id"], params["player_email"]); err != nil {
 		api_module.FailResponse(w, err.Error(), 400)
 		return
 	}

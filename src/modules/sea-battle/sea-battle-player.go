@@ -108,7 +108,7 @@ func (p *Player) sendMsgToClientOnConnection() error {
 	}
 
 	msg := SocketRespMsg[ConnectPlayerResp]{
-		Message:    fmt.Sprintf("Player %s connected to %s.", p.info.email, p.room.name),
+		Message:    fmt.Sprintf("Player %s connected to room %s.", p.info.email, p.room.name),
 		ActionType: CONNECT_PLAYER,
 		Data: ConnectPlayerResp{
 			RoomId:    p.room.id,
@@ -133,6 +133,7 @@ func (p *Player) Conn() *websocket.Conn {
 }
 
 func (p *Player) Disconnect() error {
+	// Here player.Conn() may be nil
 	if err := p.Conn().Close(); err != nil {
 		return err
 	}

@@ -19,11 +19,14 @@ func NewEventHandlers(room *Room) EventHandlers {
 }
 
 func (eh *EventHandlers) HandleNewMsg(msgBody SocketRequestMsg[any]) error {
-	switch data := msgBody.Data.(type) {
-	case NewStepReqMsg:
-		return eh.handlePlayerStep(msgBody.Email, data)
-	case PlayerPositionsMsg:
-		return eh.handlePlayerSetPositions(msgBody.Email, data.PlayerPositions)
+	switch msgBody.ActionType {
+	//  @TODO fix ERROR when send STEP action from client
+	case STEP:
+		stepData, _ := msgBody.Data.(NewStepReqMsg)
+		return eh.handlePlayerStep(msgBody.Email, stepData)
+	case SET_PLAYER_POSITIONS:
+		setPositionsData, _ := msgBody.Data.(PlayerPositionsMsg)
+		return eh.handlePlayerSetPositions(msgBody.Email, setPositionsData.PlayerPositions)
 	default:
 		fmt.Errorf("Unknown msgBody type.")
 		eh.sendMessageToClients(struct {
@@ -60,8 +63,10 @@ func (eh *EventHandlers) getEnemy(steppingPlayerEmail string) *Player {
 
 func (eh *EventHandlers) sendMessageToClients(msg any) {
 	for _, player := range eh.room.players {
-		if err := player.Conn().WriteJSON(msg); err != nil {
-			eh.queries().SaveNewError(player.room.id, player.info.id, err.Error())
+		if player.Conn() != nil {
+			if err := player.Conn().WriteJSON(msg); err != nil {
+				eh.queries().SaveNewError(player.room.id, player.info.id, err.Error())
+			}
 		}
 	}
 }
@@ -83,7 +88,7 @@ func (eh *EventHandlers) handleConnection(email string) error {
 		}
 	}
 	if enemy != nil {
-		yourData = PlayerInfoForClientOnConnection{
+		enemyData = PlayerInfoForClientOnConnection{
 			PlayerId:    enemy.info.id,
 			PlayerEmail: enemy.info.email,
 			IsOwner:     enemy.info.isOwner,
@@ -91,7 +96,7 @@ func (eh *EventHandlers) handleConnection(email string) error {
 	}
 
 	msg := SocketRespMsg[ConnectPlayerResp]{
-		Message:    fmt.Sprintf("Player %s connected to %s.", player.info.email, player.room.name),
+		Message:    fmt.Sprintf("Player %s connected to room %s.", player.info.email, player.room.name),
 		ActionType: CONNECT_PLAYER,
 		Data: ConnectPlayerResp{
 			RoomId:    eh.room.id,
