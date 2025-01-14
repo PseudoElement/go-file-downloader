@@ -30,3 +30,12 @@ func MockHttpReq() *http.Request {
 func MockRespWriter() http.ResponseWriter {
 	return struct{ http.ResponseWriter }{}
 }
+
+func MockPlayer() *Player {
+	return &Player{
+		info:      PlayerInfo{},
+		positions: "",
+		room:      new(Room),
+		rooms:     []*Room{},
+	}
+}

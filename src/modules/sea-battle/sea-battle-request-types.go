@@ -11,6 +11,8 @@ type NewStepReqMsg struct {
 	Step string `json:"step"`
 }
 
+type PlayerReadyMsg struct{}
+
 type PlayerPositionsMsg struct {
 	PlayerPositions string `json:"player_positions"`
 }

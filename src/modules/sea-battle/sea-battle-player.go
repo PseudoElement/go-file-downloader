@@ -17,6 +17,7 @@ type PlayerInfo struct {
 	email   string
 	id      string
 	isOwner bool
+	isReady bool
 }
 
 type Player struct {
@@ -57,6 +58,10 @@ func (p *Player) queries() seabattle_queries.SeaBattleQueries {
 
 func (p *Player) setIdFromDB(playerId string) {
 	p.info.id = playerId
+}
+
+func (p *Player) setReadyStatus(isReady bool) {
+	p.info.isReady = isReady
 }
 
 func (p *Player) MakeAsOwner() {
@@ -148,7 +153,6 @@ func (p *Player) Conn() *websocket.Conn {
 }
 
 func (p *Player) Disconnect() error {
-	// Here player.Conn() may be nil
 	if err := p.Conn().Close(); err != nil {
 		return err
 	}

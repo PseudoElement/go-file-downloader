@@ -16,6 +16,7 @@ const TOTAL_CELL_WITH_SHIPS_COUNT = 20
 
 const (
 	// FOR ALL
+	READY                = "READY"
 	CONNECT_PLAYER       = "CONNECT_PLAYER"
 	DISCONNECT_PLAYER    = "DISCONNECT_PLAYER"
 	STEP                 = "STEP"

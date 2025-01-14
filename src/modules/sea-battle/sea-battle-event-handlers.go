@@ -3,7 +3,6 @@ package seabattle
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -27,16 +26,16 @@ func (eh *EventHandlers) HandleNewMsg(msgBody SocketRequestMsg[any]) error {
 	//  @TODO fix ERROR when send STEP action from client
 	case STEP:
 		var stepData NewStepReqMsg
-		bytes, err := json.Marshal(msgBody.Data)
-		log.Println(err)
+		bytes, _ := json.Marshal(msgBody.Data)
 		json.Unmarshal(bytes, &stepData)
 		return eh.handlePlayerStep(msgBody.Email, stepData)
 	case SET_PLAYER_POSITIONS:
 		var setPositionsData PlayerPositionsMsg
-		bytes, err := json.Marshal(msgBody.Data)
-		log.Println(err)
+		bytes, _ := json.Marshal(msgBody.Data)
 		json.Unmarshal(bytes, &setPositionsData)
 		return eh.handlePlayerSetPositions(msgBody.Email, setPositionsData.PlayerPositions)
+	case READY:
+		return eh.handlePlayerReady(msgBody.Email)
 	default:
 		fmt.Errorf("Unknown msgBody type.")
 		eh.sendMessageToClients(struct {
@@ -93,21 +92,11 @@ func (eh *EventHandlers) handleConnection(email string) error {
 	player := eh.getPlayerByEmail(email)
 	enemy := eh.getEnemy(email)
 
-	var yourData PlayerInfoForClientOnConnection
-	var enemyData PlayerInfoForClientOnConnection
-	if player != nil {
-		yourData = PlayerInfoForClientOnConnection{
-			PlayerId:    player.info.id,
-			PlayerEmail: player.info.email,
-			IsOwner:     player.info.isOwner,
-		}
+	if player == nil {
+		player = MockPlayer()
 	}
-	if enemy != nil {
-		enemyData = PlayerInfoForClientOnConnection{
-			PlayerId:    enemy.info.id,
-			PlayerEmail: enemy.info.email,
-			IsOwner:     enemy.info.isOwner,
-		}
+	if enemy == nil {
+		enemy = MockPlayer()
 	}
 
 	msg := SocketRespMsg[ConnectPlayerResp]{
@@ -117,8 +106,16 @@ func (eh *EventHandlers) handleConnection(email string) error {
 			RoomId:    eh.room.id,
 			RoomName:  eh.room.name,
 			CreatedAt: eh.room.created_at,
-			YourData:  yourData,
-			EnemyData: enemyData,
+			YourData: PlayerInfoForClientOnConnection{
+				PlayerId:    player.info.id,
+				PlayerEmail: player.info.email,
+				IsOwner:     player.info.isOwner,
+			},
+			EnemyData: PlayerInfoForClientOnConnection{
+				PlayerId:    enemy.info.id,
+				PlayerEmail: enemy.info.email,
+				IsOwner:     enemy.info.isOwner,
+			},
 		},
 	}
 	eh.sendMessageToEnemy(enemy, msg)
@@ -168,19 +165,31 @@ func (eh *EventHandlers) handleDisconnection(email string) error {
 	return nil
 }
 
+func (eh *EventHandlers) handlePlayerReady(email string) error {
+	player := eh.getPlayerByEmail(email)
+	player.setReadyStatus(true)
+
+	msg := SocketRespMsg[PlayerReadyMsg]{
+		Message:    fmt.Sprintf("Player %s is ready.", email),
+		ActionType: READY,
+	}
+	eh.sendMessageToClients(msg)
+
+	return nil
+}
+
 func (eh *EventHandlers) handlePlayerSetPositions(email string, playerPositions string) error {
 	player := eh.getPlayerByEmail(email)
 	enemy := eh.getEnemy(email)
 
 	player.positions = playerPositions
-	var enemyPositions string
-	if enemy != nil {
-		enemyPositions = enemy.positions
+	if enemy == nil {
+		enemy = MockPlayer()
 	}
 
-	allPositions := player.info.id + ": " + playerPositions + PLAYER_POSITIONS_SEPARATOR + enemy.info.id + ": " + enemyPositions
+	allPositions := player.info.id + ": " + playerPositions + PLAYER_POSITIONS_SEPARATOR + enemy.info.id + ": " + enemy.positions
 
-	if err := eh.queries().UpdatePositions(allPositions, eh.room.name); err != nil {
+	if err := eh.queries().UpdatePositions(allPositions, eh.room.id); err != nil {
 		eh.queries().SaveNewError(player.room.id, err.Error())
 	}
 
@@ -192,11 +201,8 @@ func (eh *EventHandlers) handlePlayerSetPositions(email string, playerPositions 
 			Id:    player.info.id,
 		},
 	}
-	for _, player := range eh.room.players {
-		if err := player.Conn().WriteJSON(msg); err != nil {
-			eh.queries().SaveNewError(player.room.id, err.Error())
-		}
-	}
+
+	eh.sendMessageToClients(msg)
 
 	return nil
 }
@@ -311,7 +317,7 @@ func (eh *EventHandlers) updatePlayerPositions(player *Player, enemy *Player, st
 	}
 
 	newAllPositions := player.info.id + ": " + player.positions + PLAYER_POSITIONS_SEPARATOR + enemy.info.id + ": " + enemy.positions
-	if err := eh.queries().UpdatePositions(newAllPositions, eh.room.name); err != nil {
+	if err := eh.queries().UpdatePositions(newAllPositions, eh.room.id); err != nil {
 		return err
 	}
 

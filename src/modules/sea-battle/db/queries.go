@@ -133,11 +133,15 @@ func (q SeaBattleQueries) DisconnectPlayerFromRoom(email string, roomName string
 	return nil
 }
 
-func (q SeaBattleQueries) UpdatePositions(newPositions string, roomName string) error {
-	query := fmt.Sprintf("INSERT INTO seabattle_rooms(positions) VALUES($1) WHERE =room_name$2;")
-	_, err := q.db.Exec(query, newPositions, roomName)
+func (q SeaBattleQueries) UpdatePositions(newPositions string, roomId string) error {
+	query := fmt.Sprintf(`
+		UPDATE seabattle_rooms
+		SET positions=$1 
+		WHERE id=$2;
+	`)
+	_, err := q.db.Exec(query, newPositions, roomId)
 	if err != nil {
-		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
+		return fmt.Errorf("Error in UpdatePositions. Error: %s", err.Error())
 	}
 
 	return nil
@@ -151,7 +155,7 @@ func (q SeaBattleQueries) ChangeOwnerStatus(playerId string, isOwner bool) error
 	`)
 	_, err := q.db.Exec(query, isOwner, playerId)
 	if err != nil {
-		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
+		return fmt.Errorf("Error in ChangeOwnerStatus. Error: %s", err.Error())
 	}
 
 	return nil
