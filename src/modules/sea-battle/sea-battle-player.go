@@ -22,6 +22,7 @@ type PlayerInfo struct {
 type Player struct {
 	info          PlayerInfo
 	positions     string
+	rooms         []*Room
 	room          *Room
 	eventHandlers EventHandlers
 	conn          *websocket.Conn
@@ -33,6 +34,7 @@ func NewPlayer(
 	email string,
 	id string,
 	room *Room,
+	rooms []*Room,
 	w http.ResponseWriter,
 	req *http.Request,
 ) *Player {
@@ -42,7 +44,7 @@ func NewPlayer(
 			isOwner: len(room.players) == 0,
 			id:      id,
 		},
-		eventHandlers: NewEventHandlers(room),
+		eventHandlers: NewEventHandlers(room, rooms),
 		w:             w,
 		req:           req,
 		room:          room,
@@ -51,6 +53,14 @@ func NewPlayer(
 
 func (p *Player) queries() seabattle_queries.SeaBattleQueries {
 	return p.room.queries
+}
+
+func (p *Player) setIdFromDB(playerId string) {
+	p.info.id = playerId
+}
+
+func (p *Player) MakeAsOwner() {
+	p.info.isOwner = true
 }
 
 func (p *Player) Connect() error {
@@ -77,8 +87,16 @@ func (p *Player) Connect() error {
 	}
 
 	p.conn = conn
+
+	playerId, err := p.queries().ConnectPlayerToRoom(p.info.email, p.room.name, p.info.isOwner)
+	if err != nil {
+		return err
+	}
+
+	p.setIdFromDB(playerId)
 	// add player in room.players map
-	p.room.players[p.info.id] = p
+	p.room.players[playerId] = p
+
 	if err := p.eventHandlers.handleConnection(p.info.email); err != nil {
 		return err
 	}
@@ -93,10 +111,7 @@ func (p *Player) Connect() error {
 }
 
 func (p *Player) sendMsgToClientOnConnection() error {
-	playersOfRoom, isEmpty := GetPlayersFromRoom(p.info.email, p.room)
-	if isEmpty {
-		return fmt.Errorf("Room is empty! You can't disconnect.")
-	}
+	playersOfRoom, _ := GetPlayersFromRoom(p.info.email, p.room)
 
 	var enemyData PlayerInfoForClientOnConnection
 	if playersOfRoom.Enemy != nil {
@@ -115,9 +130,9 @@ func (p *Player) sendMsgToClientOnConnection() error {
 			RoomName:  p.room.name,
 			CreatedAt: p.room.created_at,
 			YourData: PlayerInfoForClientOnConnection{
-				PlayerId:    playersOfRoom.Enemy.info.id,
-				PlayerEmail: playersOfRoom.Enemy.info.email,
-				IsOwner:     playersOfRoom.Enemy.info.isOwner,
+				PlayerId:    p.info.id,
+				PlayerEmail: p.info.email,
+				IsOwner:     p.info.isOwner,
 			},
 			EnemyData: enemyData,
 		},
@@ -166,10 +181,6 @@ func (p *Player) Broadcast() {
 		}
 
 	}
-}
-
-func (p *Player) MakeAsOwner() {
-	p.info.isOwner = true
 }
 
 var _ PlayerSocket = (*Player)(nil)

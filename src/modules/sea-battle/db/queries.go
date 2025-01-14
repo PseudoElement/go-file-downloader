@@ -67,9 +67,9 @@ func (q SeaBattleQueries) CreateRoom(roomName string) (DB_NewCreatedRoom, error)
 	return newRoom, nil
 }
 
-func (q SeaBattleQueries) DeleteRoom(roomName string) error {
-	query := fmt.Sprintf("DELETE FROM seabattle_rooms(room_name) VALUES($1);")
-	_, err := q.db.Exec(query, roomName)
+func (q SeaBattleQueries) DeleteRoom(roomId string) error {
+	query := fmt.Sprintf("DELETE FROM seabattle_rooms WHERE id=$1;")
+	_, err := q.db.Exec(query, roomId)
 	if err != nil {
 		return fmt.Errorf("Error in DeleteRoom. Error: %s", err.Error())
 	}
@@ -107,14 +107,20 @@ func (q SeaBattleQueries) CheckPlayerAlreadyExists(playerEmail string) (bool, er
 	return true, nil
 }
 
-func (q SeaBattleQueries) ConnectPlayerToRoom(email string, roomName string, isOwner bool) error {
-	query := fmt.Sprintf("INSERT INTO seabattle_players(email, room_name, is_owner) VALUES($1, $2, $3);")
-	_, err := q.db.Exec(query, email, roomName, isOwner)
+func (q SeaBattleQueries) ConnectPlayerToRoom(email string, roomName string, isOwner bool) (string, error) {
+	var playerId string
+	query := fmt.Sprintf(`
+		INSERT INTO seabattle_players(email, room_name, is_owner) 
+		VALUES($1, $2, $3)
+		RETURNING id;
+	`)
+
+	err := q.db.QueryRow(query, email, roomName, isOwner).Scan(&playerId)
 	if err != nil {
-		return fmt.Errorf("Error in ConnectPlayerToRoom. Error: %s", err.Error())
+		return "", fmt.Errorf("Error in ConnectPlayerToRoom. Error: %s", err.Error())
 	}
 
-	return nil
+	return playerId, nil
 }
 
 func (q SeaBattleQueries) DisconnectPlayerFromRoom(email string, roomName string) error {
@@ -130,6 +136,20 @@ func (q SeaBattleQueries) DisconnectPlayerFromRoom(email string, roomName string
 func (q SeaBattleQueries) UpdatePositions(newPositions string, roomName string) error {
 	query := fmt.Sprintf("INSERT INTO seabattle_rooms(positions) VALUES($1) WHERE =room_name$2;")
 	_, err := q.db.Exec(query, newPositions, roomName)
+	if err != nil {
+		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
+	}
+
+	return nil
+}
+
+func (q SeaBattleQueries) ChangeOwnerStatus(playerId string, isOwner bool) error {
+	query := fmt.Sprintf(`
+		UPDATE seabattle_players
+		SET is_owner=$1
+		WHERE id=$2;
+	`)
+	_, err := q.db.Exec(query, isOwner, playerId)
 	if err != nil {
 		return fmt.Errorf("Error in CreateRoom. Error: %s", err.Error())
 	}

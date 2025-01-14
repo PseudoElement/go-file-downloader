@@ -1,31 +1,41 @@
 package seabattle
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
 
 	seabattle_queries "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle/db"
 	"github.com/pseudoelement/go-file-downloader/src/utils/common"
+	slice_utils_module "github.com/pseudoelement/golang-utils/src/utils/slices"
 )
 
 type EventHandlers struct {
-	room *Room
+	room  *Room
+	rooms []*Room
 }
 
-func NewEventHandlers(room *Room) EventHandlers {
-	return EventHandlers{room: room}
+func NewEventHandlers(room *Room, rooms []*Room) EventHandlers {
+	return EventHandlers{room: room, rooms: rooms}
 }
 
 func (eh *EventHandlers) HandleNewMsg(msgBody SocketRequestMsg[any]) error {
 	switch msgBody.ActionType {
 	//  @TODO fix ERROR when send STEP action from client
 	case STEP:
-		stepData, _ := msgBody.Data.(NewStepReqMsg)
+		var stepData NewStepReqMsg
+		bytes, err := json.Marshal(msgBody.Data)
+		log.Println(err)
+		json.Unmarshal(bytes, &stepData)
 		return eh.handlePlayerStep(msgBody.Email, stepData)
 	case SET_PLAYER_POSITIONS:
-		setPositionsData, _ := msgBody.Data.(PlayerPositionsMsg)
+		var setPositionsData PlayerPositionsMsg
+		bytes, err := json.Marshal(msgBody.Data)
+		log.Println(err)
+		json.Unmarshal(bytes, &setPositionsData)
 		return eh.handlePlayerSetPositions(msgBody.Email, setPositionsData.PlayerPositions)
 	default:
 		fmt.Errorf("Unknown msgBody type.")
@@ -65,8 +75,16 @@ func (eh *EventHandlers) sendMessageToClients(msg any) {
 	for _, player := range eh.room.players {
 		if player.Conn() != nil {
 			if err := player.Conn().WriteJSON(msg); err != nil {
-				eh.queries().SaveNewError(player.room.id, player.info.id, err.Error())
+				eh.queries().SaveNewError(player.room.id, err.Error())
 			}
+		}
+	}
+}
+
+func (eh *EventHandlers) sendMessageToEnemy(enemy *Player, msg any) {
+	if enemy != nil && enemy.Conn() != nil {
+		if err := enemy.Conn().WriteJSON(msg); err != nil {
+			eh.queries().SaveNewError(enemy.room.id, err.Error())
 		}
 	}
 }
@@ -74,9 +92,6 @@ func (eh *EventHandlers) sendMessageToClients(msg any) {
 func (eh *EventHandlers) handleConnection(email string) error {
 	player := eh.getPlayerByEmail(email)
 	enemy := eh.getEnemy(email)
-	if err := eh.queries().ConnectPlayerToRoom(player.info.email, player.room.name, player.info.isOwner); err != nil {
-		return err
-	}
 
 	var yourData PlayerInfoForClientOnConnection
 	var enemyData PlayerInfoForClientOnConnection
@@ -106,17 +121,37 @@ func (eh *EventHandlers) handleConnection(email string) error {
 			EnemyData: enemyData,
 		},
 	}
-	eh.sendMessageToClients(msg)
+	eh.sendMessageToEnemy(enemy, msg)
 
 	return nil
 }
 
 func (eh *EventHandlers) handleDisconnection(email string) error {
 	player := eh.getPlayerByEmail(email)
+	enemy := eh.getEnemy(email)
+	wasOwner := player.info.isOwner
+
 	if err := eh.queries().DisconnectPlayerFromRoom(player.info.email, player.room.name); err != nil {
 		return err
 	}
 	delete(eh.room.players, player.info.id)
+
+	if wasOwner && enemy != nil {
+		if err := eh.queries().ChangeOwnerStatus(enemy.info.id, true); err != nil {
+			eh.queries().SaveNewError(eh.room.id, err.Error())
+		}
+		enemy.MakeAsOwner()
+	}
+
+	if isEmptyRoom := len(eh.room.players) == 0; isEmptyRoom {
+		if err := eh.queries().DeleteRoom(eh.room.id); err != nil {
+			eh.queries().SaveNewError(eh.room.id, err.Error())
+		}
+
+		eh.rooms = slice_utils_module.Filter(eh.rooms, func(r *Room, idx int) bool {
+			return r.id != eh.room.id
+		})
+	}
 
 	msg := SocketRespMsg[DisconnectPlayerResp]{
 		Message:    fmt.Sprintf("Player %s disconnected from %s.", player.info.email, player.room.name),
@@ -138,10 +173,15 @@ func (eh *EventHandlers) handlePlayerSetPositions(email string, playerPositions 
 	enemy := eh.getEnemy(email)
 
 	player.positions = playerPositions
-	allPositions := player.info.id + ": " + playerPositions + PLAYER_POSITIONS_SEPARATOR + enemy.info.id + ": " + enemy.positions
+	var enemyPositions string
+	if enemy != nil {
+		enemyPositions = enemy.positions
+	}
+
+	allPositions := player.info.id + ": " + playerPositions + PLAYER_POSITIONS_SEPARATOR + enemy.info.id + ": " + enemyPositions
 
 	if err := eh.queries().UpdatePositions(allPositions, eh.room.name); err != nil {
-		eh.queries().SaveNewError(player.room.id, player.info.id, err.Error())
+		eh.queries().SaveNewError(player.room.id, err.Error())
 	}
 
 	msg := SocketRespMsg[PlayerSetPositionsResp]{
@@ -154,7 +194,7 @@ func (eh *EventHandlers) handlePlayerSetPositions(email string, playerPositions 
 	}
 	for _, player := range eh.room.players {
 		if err := player.Conn().WriteJSON(msg); err != nil {
-			eh.queries().SaveNewError(player.room.id, player.info.id, err.Error())
+			eh.queries().SaveNewError(player.room.id, err.Error())
 		}
 	}
 
@@ -164,7 +204,7 @@ func (eh *EventHandlers) handlePlayerSetPositions(email string, playerPositions 
 func (eh *EventHandlers) handlePlayerStep(email string, step NewStepReqMsg) error {
 	player := eh.getPlayerByEmail(email)
 	enemy := eh.getEnemy(email)
-
+	// FIX enemy is nil
 	expression := fmt.Sprintf("%s[^,]*,", step.Step)
 	r, _ := regexp.Compile(expression)
 	selectedCellValue := r.FindString(enemy.positions)
@@ -193,7 +233,7 @@ func (eh *EventHandlers) handleAlreadyChecked(player *Player, enemy *Player, ste
 		},
 	}
 	if err := player.Conn().WriteJSON(steppingPlayerMsg); err != nil {
-		eh.queries().SaveNewError(player.room.id, player.info.id, err.Error())
+		eh.queries().SaveNewError(player.room.id, err.Error())
 	}
 
 	return nil

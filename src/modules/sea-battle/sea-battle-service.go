@@ -43,7 +43,7 @@ func (this *SeaBattleService) loadExistingRoomsFromDB() []*Room {
 		}
 
 		for _, p := range *room.Players {
-			newRoom.players[p.PlayerId] = NewPlayer(p.PlayerEmail, p.PlayerId, newRoom, MockRespWriter(), MockHttpReq())
+			newRoom.players[p.PlayerId] = NewPlayer(p.PlayerEmail, p.PlayerId, newRoom, this.rooms, MockRespWriter(), MockHttpReq())
 		}
 
 		rooms = append(rooms, newRoom)
@@ -121,7 +121,7 @@ func (this *SeaBattleService) connectUserToToom(roomName string, roomId string, 
 	}
 
 	id := uuid.New().String()
-	player := NewPlayer(playerEmail, id, room, w, req)
+	player := NewPlayer(playerEmail, id, room, this.rooms, w, req)
 	if e := player.Connect(); e != nil {
 		return e
 	}
@@ -147,6 +147,9 @@ func (this *SeaBattleService) disconnectUserFromRoom(roomId string, playerEmail 
 	}
 
 	if playersOfRoom.CurrentPlayer.info.isOwner && playersOfRoom.Enemy != nil {
+		if err := this.queries.ChangeOwnerStatus(playersOfRoom.Enemy.info.id, true); err != nil {
+			this.queries.SaveNewError(room.id, err.Error())
+		}
 		playersOfRoom.Enemy.MakeAsOwner()
 	}
 

@@ -20,3 +20,7 @@ func IndexOf[T comparable](slice []T, val T) int {
 
 	return -1
 }
+
+func RemoveEl[T comparable](slice []T, idx int) []T {
+	return append(slice[:idx], slice[idx+1:]...)
+}
