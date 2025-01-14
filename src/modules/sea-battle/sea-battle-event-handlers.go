@@ -169,9 +169,13 @@ func (eh *EventHandlers) handlePlayerReady(email string) error {
 	player := eh.getPlayerByEmail(email)
 	player.setReadyStatus(true)
 
-	msg := SocketRespMsg[PlayerReadyMsg]{
+	msg := SocketRespMsg[PlayerReadyResp]{
 		Message:    fmt.Sprintf("Player %s is ready.", email),
 		ActionType: READY,
+		Data: PlayerReadyResp{
+			Email: player.info.email,
+			Id:    player.info.id,
+		},
 	}
 	eh.sendMessageToClients(msg)
 
