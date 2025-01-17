@@ -93,9 +93,17 @@ func (p *Player) Connect() error {
 
 	p.conn = conn
 
-	playerId, err := p.queries().ConnectPlayerToRoom(p.info.email, p.room.name, p.info.isOwner)
-	if err != nil {
-		return err
+	var playerId string
+	if IsPlayerAlreadyAddedToRoomFromDB(p.room, p.info.email) {
+		if dbPlayer, err := p.queries().GetPlayerByEmail(p.info.email); err != nil {
+			return err
+		} else {
+			playerId = dbPlayer.PlayerId
+		}
+	} else {
+		if playerId, err = p.queries().ConnectPlayerToRoom(p.info.email, p.room.name, p.info.isOwner); err != nil {
+			return err
+		}
 	}
 
 	p.setIdFromDB(playerId)

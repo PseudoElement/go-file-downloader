@@ -92,19 +92,19 @@ func (q SeaBattleQueries) CheckRoomAlreadyExists(roomName string) (bool, error) 
 	return true, nil
 }
 
-func (q SeaBattleQueries) CheckPlayerAlreadyExists(playerEmail string) (bool, error) {
-	var player any
-	row := q.db.QueryRow("SELECT * FROM seabattle_player WHERE email=$1;", playerEmail)
-
-	if err := row.Scan(&player); err != nil {
-		if err == sql.ErrNoRows {
-			return false, nil
-		} else {
-			return true, err
-		}
+func (q SeaBattleQueries) GetPlayerByEmail(playerEmail string) (DB_Player, error) {
+	var player DB_Player
+	row := q.db.QueryRow("SELECT * FROM seabattle_players WHERE email=$1;", playerEmail)
+	if err := row.Scan(
+		&player.PlayerId,
+		&player.PlayerEmail,
+		&player.RoomName,
+		&player.IsOwner,
+	); err != nil {
+		return player, fmt.Errorf("Error in GetPlayerByEmail. Error: %s", err.Error())
+	} else {
+		return player, nil
 	}
-
-	return true, nil
 }
 
 func (q SeaBattleQueries) ConnectPlayerToRoom(email string, roomName string, isOwner bool) (string, error) {

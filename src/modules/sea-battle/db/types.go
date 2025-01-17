@@ -15,3 +15,10 @@ type DB_NewCreatedRoom struct {
 	RoomName  string
 	CreatedAt string
 }
+
+type DB_Player struct {
+	RoomName    string
+	PlayerEmail string
+	PlayerId    string
+	IsOwner     bool
+}

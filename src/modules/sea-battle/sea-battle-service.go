@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/google/uuid"
 	seabattle_queries "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle/db"
 	slice_utils_module "github.com/pseudoelement/golang-utils/src/utils/slices"
 )
@@ -116,12 +115,14 @@ func (this *SeaBattleService) connectUserToToom(roomName string, roomId string, 
 	if e != nil {
 		return e
 	}
+	if IsPlayerAlreadyConnectedToRoom(room, playerEmail) {
+		return fmt.Errorf("You've already connected to room %s.", roomName)
+	}
 	if len(room.players) == 2 {
 		return fmt.Errorf("Room is full.")
 	}
 
-	id := uuid.New().String()
-	player := NewPlayer(playerEmail, id, room, this.rooms, w, req)
+	player := NewPlayer(playerEmail, "", room, this.rooms, w, req)
 	if e := player.Connect(); e != nil {
 		return e
 	}

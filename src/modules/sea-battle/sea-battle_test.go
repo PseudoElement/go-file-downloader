@@ -579,10 +579,9 @@ func TestIsShipKilled(t *testing.T) {
 		J1+*,J2,J3+,J4,J5+*,J6,J7,J8,J9,J10+*,
 		`}, NewStepReqMsg{"I10"}, true, "10_COL_3cell_bottom_kill"},
 	}
-	eh := NewEventHandlers(&Room{}, []*Room{})
 
 	for _, tt := range testsOfRows {
-		answer := eh.isShipKilled(tt.enemy, tt.step)
+		answer := IsShipKilled(tt.enemy, tt.step)
 		t.Run("Tests of rows", func(t *testing.T) {
 			if answer != tt.expected {
 				t.Errorf("%s got %v, expected %v", tt.CaseName, answer, tt.expected)
@@ -593,7 +592,7 @@ func TestIsShipKilled(t *testing.T) {
 	}
 
 	for _, tt := range testsOfColumns {
-		answer := eh.isShipKilled(tt.enemy, tt.step)
+		answer := IsShipKilled(tt.enemy, tt.step)
 		t.Run("Tests of columns", func(t *testing.T) {
 			if answer != tt.expected {
 				t.Errorf("%s got %v, expected %v", tt.CaseName, answer, tt.expected)
