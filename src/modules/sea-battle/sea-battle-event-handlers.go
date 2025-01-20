@@ -80,15 +80,16 @@ func (eh *EventHandlers) handleConnection(email string) error {
 		Message:    fmt.Sprintf("Player %s connected to room %s.", player.info.email, player.room.name),
 		ActionType: CONNECT_PLAYER,
 		Data: ConnectPlayerResp{
-			RoomId:    eh.room.id,
-			RoomName:  eh.room.name,
-			CreatedAt: eh.room.created_at,
-			YourData: PlayerInfoForClientOnConnection{
+			RoomId:              eh.room.id,
+			RoomName:            eh.room.name,
+			CreatedAt:           eh.room.created_at,
+			SteppingPlayerEmail: email,
+			Player1: PlayerInfoForClientOnConnection{
 				PlayerId:    player.info.id,
 				PlayerEmail: player.info.email,
 				IsOwner:     player.info.isOwner,
 			},
-			EnemyData: PlayerInfoForClientOnConnection{
+			Player2: PlayerInfoForClientOnConnection{
 				PlayerId:    enemy.info.id,
 				PlayerEmail: enemy.info.email,
 				IsOwner:     enemy.info.isOwner,

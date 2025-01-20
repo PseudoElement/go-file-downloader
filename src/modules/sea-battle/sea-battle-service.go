@@ -118,7 +118,8 @@ func (this *SeaBattleService) connectUserToToom(roomName string, roomId string, 
 	if IsPlayerAlreadyConnectedToRoom(room, playerEmail) {
 		return fmt.Errorf("You've already connected to room %s.", roomName)
 	}
-	if len(room.players) == 2 {
+	// pass user with email that exists in room but has not player.Conn()
+	if len(room.players) == 2 && !IsPlayerAlreadyAddedToRoomFromDB(room, playerEmail) {
 		return fmt.Errorf("Room is full.")
 	}
 
@@ -188,8 +189,8 @@ func (this *SeaBattleService) getRoomInfo(roomName string, playerEmail string) (
 			RoomId:    room.id,
 			RoomName:  room.name,
 			CreatedAt: room.created_at,
-			YourData:  PlayerInfoForClientOnConnection{},
-			EnemyData: PlayerInfoForClientOnConnection{},
+			Player1:   PlayerInfoForClientOnConnection{},
+			Player2:   PlayerInfoForClientOnConnection{},
 		}, nil
 	}
 
@@ -211,15 +212,16 @@ func (this *SeaBattleService) getRoomInfo(roomName string, playerEmail string) (
 	}
 
 	return ConnectPlayerResp{
-		RoomId:    room.id,
-		RoomName:  room.name,
-		CreatedAt: room.created_at,
-		YourData: PlayerInfoForClientOnConnection{
+		RoomId:              room.id,
+		RoomName:            room.name,
+		CreatedAt:           room.created_at,
+		SteppingPlayerEmail: "",
+		Player1: PlayerInfoForClientOnConnection{
 			PlayerId:    yourData.PlayerId,
 			PlayerEmail: yourData.PlayerEmail,
 			IsOwner:     yourData.IsOwner,
 		},
-		EnemyData: PlayerInfoForClientOnConnection{
+		Player2: PlayerInfoForClientOnConnection{
 			PlayerId:    enemyData.PlayerId,
 			PlayerEmail: enemyData.PlayerEmail,
 			IsOwner:     enemyData.IsOwner,

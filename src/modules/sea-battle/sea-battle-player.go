@@ -139,15 +139,16 @@ func (p *Player) sendMsgToClientOnConnection() error {
 		Message:    fmt.Sprintf("Player %s connected to room %s.", p.info.email, p.room.name),
 		ActionType: CONNECT_PLAYER,
 		Data: ConnectPlayerResp{
-			RoomId:    p.room.id,
-			RoomName:  p.room.name,
-			CreatedAt: p.room.created_at,
-			YourData: PlayerInfoForClientOnConnection{
+			RoomId:              p.room.id,
+			RoomName:            p.room.name,
+			CreatedAt:           p.room.created_at,
+			SteppingPlayerEmail: p.info.email,
+			Player1: PlayerInfoForClientOnConnection{
 				PlayerId:    p.info.id,
 				PlayerEmail: p.info.email,
 				IsOwner:     p.info.isOwner,
 			},
-			EnemyData: enemyData,
+			Player2: enemyData,
 		},
 	}
 

@@ -7,11 +7,12 @@ type SocketRespMsg[T any] struct {
 }
 
 type ConnectPlayerResp struct {
-	RoomId    string                          `json:"room_id"`
-	RoomName  string                          `json:"room_name"`
-	CreatedAt string                          `json:"created_at"`
-	YourData  PlayerInfoForClientOnConnection `json:"your_data"`
-	EnemyData PlayerInfoForClientOnConnection `json:"enemy_data"`
+	RoomId              string                          `json:"room_id"`
+	RoomName            string                          `json:"room_name"`
+	CreatedAt           string                          `json:"created_at"`
+	SteppingPlayerEmail string                          `json:"stepping_player_email"`
+	Player1             PlayerInfoForClientOnConnection `json:"player_1"`
+	Player2             PlayerInfoForClientOnConnection `json:"player_2"`
 }
 
 type DisconnectPlayerResp struct {
