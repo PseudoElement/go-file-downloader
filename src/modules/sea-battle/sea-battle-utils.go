@@ -213,12 +213,11 @@ func GetPlayerInRoomByEmail(steppingPlayerEmail string, room *Room) *Player {
 }
 
 func GetEnemyInRoom(steppingPlayerEmail string, room *Room) *Player {
-	var enemy *Player
 	for _, pl := range room.players {
 		if pl.info.email != steppingPlayerEmail {
-			enemy = pl
+			return pl
 		}
 	}
 
-	return enemy
+	return nil
 }

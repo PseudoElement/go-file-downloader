@@ -51,15 +51,6 @@ func (q SeaBattleQueries) createRoomsTable() error {
 	return nil
 }
 
-/*
-resp: {
-	rooms: {
-		room_id_1: {room_name: "room_1", room_id: "room_id_1", created_at: "12 Dec 2025", players: [Player, Player]},
-		room_id_2: {room_name: "room_2", room_id: "room_id_2", created_at: "13 Dec 2025", players: [Player, Player]}
-	}
-}
-*/
-
 func (q SeaBattleQueries) createPlayersTable() error {
 	_, err := q.db.Exec(`
 		CREATE TABLE IF NOT EXISTS seabattle_players (

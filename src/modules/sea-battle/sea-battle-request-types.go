@@ -13,6 +13,8 @@ type NewStepReqMsg struct {
 
 type PlayerReadyMsg struct{}
 
+type StartGameReqMsg struct{}
+
 type PlayerPositionsMsg struct {
 	PlayerPositions string `json:"player_positions"`
 }

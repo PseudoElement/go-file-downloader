@@ -27,6 +27,9 @@ type PlayerReadyResp struct {
 	Id    string `json:"player_id"`
 }
 
+type StartGameResp struct {
+}
+
 type GameWinResp struct {
 	WinnerEmail string `json:"winner_email"`
 	WinnerId    string `json:"winner_id"`

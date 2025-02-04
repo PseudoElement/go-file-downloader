@@ -12,11 +12,12 @@ const (
 const PLAYER_POSITIONS_SEPARATOR = "___"
 const STRIKED_CELL_SYMBOL = "*"
 const CELL_WITH_SHIP_SYMBOL = "+"
-const TOTAL_CELL_WITH_SHIPS_COUNT = 20
+const TOTAL_CELL_WITH_SHIPS_COUNT = 4 + 3 + 3 + 2 + 2 + 2 + 1 + 1 + 1 + 1
 
 const (
 	// FOR ALL
 	READY                = "READY"
+	START_GAME           = "START_GAME"
 	CONNECT_PLAYER       = "CONNECT_PLAYER"
 	DISCONNECT_PLAYER    = "DISCONNECT_PLAYER"
 	STEP                 = "STEP"
@@ -32,6 +33,7 @@ const (
 	MISS            = "MISS"
 	KILL            = "KILL"
 	ALREADY_CHECKED = "ALREADY_CHECKED"
+	EMPTY_STEP      = "EMPTY_STEP"
 )
 
 func CreateMockFields(player1 string, player2 string) string {

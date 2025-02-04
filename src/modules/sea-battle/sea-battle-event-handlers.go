@@ -34,6 +34,8 @@ func (eh *EventHandlers) HandleNewMsg(msgBody SocketRequestMsg[any]) error {
 		return eh.handlePlayerSetPositions(msgBody.Email, setPositionsData.PlayerPositions)
 	case READY:
 		return eh.handlePlayerReady(msgBody.Email)
+	case START_GAME:
+		return eh.handleStartGame()
 	default:
 		fmt.Errorf("Unknown msgBody type.")
 		eh.sendMessageToClients(struct {
@@ -63,6 +65,17 @@ func (eh *EventHandlers) sendMessageToEnemy(enemy *Player, msg any) {
 			eh.queries().SaveNewError(enemy.room.id, err.Error())
 		}
 	}
+}
+
+func (eh *EventHandlers) handleStartGame() error {
+	eh.room.isPlaying = true
+	msg := SocketRespMsg[StartGameResp]{
+		Message:    "Game started!",
+		ActionType: START_GAME,
+	}
+	eh.sendMessageToClients(msg)
+
+	return nil
 }
 
 func (eh *EventHandlers) handleConnection(email string) error {
@@ -102,14 +115,25 @@ func (eh *EventHandlers) handleConnection(email string) error {
 }
 
 func (eh *EventHandlers) handleDisconnection(email string) error {
-	player := GetPlayerInRoomByEmail(email, eh.room)
+	disconnectedPlayer := GetPlayerInRoomByEmail(email, eh.room)
 	enemy := GetEnemyInRoom(email, eh.room)
-	wasOwner := player.info.isOwner
+	wasOwner := disconnectedPlayer.info.isOwner
 
-	if err := eh.queries().DisconnectPlayerFromRoom(player.info.email, player.room.name); err != nil {
+	eh.room.isPlaying = false
+
+	if enemy != nil {
+		enemy.positions = ""
+		emptyPositions := ""
+
+		if err := eh.queries().UpdatePositions(emptyPositions, eh.room.id); err != nil {
+			eh.queries().SaveNewError(eh.room.id, err.Error())
+		}
+	}
+
+	if err := eh.queries().DisconnectPlayerFromRoom(disconnectedPlayer.info.email, disconnectedPlayer.room.name); err != nil {
 		return err
 	}
-	delete(eh.room.players, player.info.id)
+	delete(eh.room.players, disconnectedPlayer.info.id)
 
 	if wasOwner && enemy != nil {
 		if err := eh.queries().ChangeOwnerStatus(enemy.info.id, true); err != nil {
@@ -129,13 +153,13 @@ func (eh *EventHandlers) handleDisconnection(email string) error {
 	}
 
 	msg := SocketRespMsg[DisconnectPlayerResp]{
-		Message:    fmt.Sprintf("Player %s disconnected from %s.", player.info.email, player.room.name),
+		Message:    fmt.Sprintf("Player %s disconnected from %s.", disconnectedPlayer.info.email, disconnectedPlayer.room.name),
 		ActionType: DISCONNECT_PLAYER,
 		Data: DisconnectPlayerResp{
-			RoomId:   player.room.id,
-			RoomName: player.room.name,
-			Email:    player.info.email,
-			Id:       player.info.id,
+			RoomId:   disconnectedPlayer.room.id,
+			RoomName: disconnectedPlayer.room.name,
+			Email:    disconnectedPlayer.info.email,
+			Id:       disconnectedPlayer.info.id,
 		},
 	}
 	eh.sendMessageToClients(msg)
@@ -192,13 +216,15 @@ func (eh *EventHandlers) handlePlayerSetPositions(email string, playerPositions 
 func (eh *EventHandlers) handlePlayerStep(email string, step NewStepReqMsg) error {
 	player := GetPlayerInRoomByEmail(email, eh.room)
 	enemy := GetEnemyInRoom(email, eh.room)
-	// FIX enemy is nil
+
 	expression := fmt.Sprintf("%s[^,]*,", step.Step)
 	r, _ := regexp.Compile(expression)
 	selectedCellValue := r.FindString(enemy.positions)
 	cellValueWithoutComma := selectedCellValue[:len(selectedCellValue)-1]
 
-	if strings.Contains(cellValueWithoutComma, ".") || strings.Contains(cellValueWithoutComma, "*") {
+	if step.Step == "" {
+		eh.handleEmptyStep(player, step)
+	} else if strings.Contains(cellValueWithoutComma, ".") || strings.Contains(cellValueWithoutComma, "*") {
 		eh.handleAlreadyChecked(player, enemy, step)
 	} else if strings.Contains(cellValueWithoutComma, "+") {
 		eh.handleHit(player, enemy, step, cellValueWithoutComma)
@@ -218,6 +244,24 @@ func (eh *EventHandlers) handleAlreadyChecked(player *Player, enemy *Player, ste
 			Id:     player.info.id,
 			Step:   step.Step,
 			Result: ALREADY_CHECKED,
+		},
+	}
+	if err := player.Conn().WriteJSON(steppingPlayerMsg); err != nil {
+		eh.queries().SaveNewError(player.room.id, err.Error())
+	}
+
+	return nil
+}
+
+func (eh *EventHandlers) handleEmptyStep(player *Player, step NewStepReqMsg) error {
+	steppingPlayerMsg := SocketRespMsg[PlayerStepResp]{
+		Message:    "Step can't be empty!",
+		ActionType: STEP,
+		Data: PlayerStepResp{
+			Email:  player.info.email,
+			Id:     player.info.id,
+			Step:   step.Step,
+			Result: EMPTY_STEP,
 		},
 	}
 	if err := player.Conn().WriteJSON(steppingPlayerMsg); err != nil {

@@ -71,9 +71,9 @@ func (this *SeaBattleService) getRoomsList() (RoomsListResp, error) {
 		}
 
 		player := RoomsListPlayerResp{
-			PlayerId:    dbRow.PlayerId,
-			PlayerEmail: dbRow.PlayerEmail,
-			IsOwner:     dbRow.IsOwner,
+			PlayerId:    string(dbRow.PlayerId.Int64),
+			PlayerEmail: dbRow.PlayerEmail.String,
+			IsOwner:     dbRow.IsOwner.Bool,
 		}
 		*room.Players = append(*room.Players, player)
 	}
