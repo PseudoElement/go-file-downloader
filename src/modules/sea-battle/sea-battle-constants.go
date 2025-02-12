@@ -23,6 +23,7 @@ const (
 	STEP                 = "STEP"
 	SET_PLAYER_POSITIONS = "SET_PLAYER_POSITIONS"
 	WIN_GAME             = "WIN_GAME"
+	RESET                = "RESET"
 	// FOR SINGLE USER
 	ERROR = "ERROR"
 )

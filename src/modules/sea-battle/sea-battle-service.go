@@ -82,12 +82,6 @@ func (this *SeaBattleService) getRoomsList() (RoomsListResp, error) {
 }
 
 func (this *SeaBattleService) createNewRoom(roomName string, playerEmail string) (ConnectPlayerResp, error) {
-	if isExists, err := this.queries.CheckRoomAlreadyExists(roomName); err != nil {
-		return ConnectPlayerResp{}, err
-	} else if isExists {
-		return ConnectPlayerResp{}, fmt.Errorf("Room with name %s already exists.", roomName)
-	}
-
 	room, err := this.queries.CreateRoom(roomName)
 	if err != nil {
 		return ConnectPlayerResp{}, nil

@@ -21,7 +21,6 @@ func NewEventHandlers(room *Room, rooms []*Room) EventHandlers {
 
 func (eh *EventHandlers) HandleNewMsg(msgBody SocketRequestMsg[any]) error {
 	switch msgBody.ActionType {
-	//  @TODO fix ERROR when send STEP action from client
 	case STEP:
 		var stepData NewStepReqMsg
 		bytes, _ := json.Marshal(msgBody.Data)
@@ -36,6 +35,8 @@ func (eh *EventHandlers) HandleNewMsg(msgBody SocketRequestMsg[any]) error {
 		return eh.handlePlayerReady(msgBody.Email)
 	case START_GAME:
 		return eh.handleStartGame()
+	case RESET:
+		return eh.handleResetGame(msgBody.Email)
 	default:
 		fmt.Errorf("Unknown msgBody type.")
 		eh.sendMessageToClients(struct {
@@ -72,6 +73,32 @@ func (eh *EventHandlers) handleStartGame() error {
 	msg := SocketRespMsg[StartGameResp]{
 		Message:    "Game started!",
 		ActionType: START_GAME,
+	}
+	eh.sendMessageToClients(msg)
+
+	return nil
+}
+
+func (eh *EventHandlers) handleResetGame(email string) error {
+	player := GetPlayerInRoomByEmail(email, eh.room)
+	enemy := GetEnemyInRoom(email, eh.room)
+	if player != nil {
+		player.positions = ""
+	}
+	if enemy == nil {
+		enemy.positions = ""
+	}
+
+	allPositions := ""
+	eh.room.isPlaying = false
+
+	if err := eh.queries().UpdatePositions(allPositions, eh.room.id); err != nil {
+		eh.queries().SaveNewError(eh.room.id, err.Error())
+	}
+
+	msg := SocketRespMsg[StartGameResp]{
+		Message:    fmt.Sprintf("Room host %s reset fields.", player.info.email),
+		ActionType: RESET,
 	}
 	eh.sendMessageToClients(msg)
 
@@ -153,7 +180,11 @@ func (eh *EventHandlers) handleDisconnection(email string) error {
 	}
 
 	msg := SocketRespMsg[DisconnectPlayerResp]{
-		Message:    fmt.Sprintf("Player %s disconnected from %s.", disconnectedPlayer.info.email, disconnectedPlayer.room.name),
+		Message: fmt.Sprintf(
+			"Player %s disconnected from room %s.",
+			disconnectedPlayer.info.email,
+			disconnectedPlayer.room.name,
+		),
 		ActionType: DISCONNECT_PLAYER,
 		Data: DisconnectPlayerResp{
 			RoomId:   disconnectedPlayer.room.id,

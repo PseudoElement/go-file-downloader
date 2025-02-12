@@ -84,11 +84,11 @@ func (q SeaBattleQueries) DeleteRoom(roomId string) error {
 	return nil
 }
 
-func (q SeaBattleQueries) CheckRoomAlreadyExists(roomName string) (bool, error) {
-	var room any
-	row := q.db.QueryRow("SELECT * FROM seabattle_rooms WHERE room_name=$1;", roomName)
+func (q SeaBattleQueries) IsRoomAlreadyExists(roomName string) (bool, error) {
+	var name string
+	row := q.db.QueryRow("SELECT room_name FROM seabattle_rooms WHERE room_name=$1;", roomName)
 
-	if err := row.Scan(&room); err != nil {
+	if err := row.Scan(&name); err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil
 		} else {
@@ -97,6 +97,12 @@ func (q SeaBattleQueries) CheckRoomAlreadyExists(roomName string) (bool, error) 
 	}
 
 	return true, nil
+}
+
+func (q SeaBattleQueries) IsPlayerEmailAlreadyTaken(email string) bool {
+	var playerId string
+	err := q.db.QueryRow("SELECT * FROM seabattle_players WHERE email=$1", email).Scan(&playerId)
+	return err != sql.ErrNoRows
 }
 
 func (q SeaBattleQueries) GetPlayerByEmail(playerEmail string) (DB_Player, error) {
