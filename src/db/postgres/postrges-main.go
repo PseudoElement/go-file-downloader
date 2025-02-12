@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
 	_ "github.com/lib/pq"
 	db_interfaces "github.com/pseudoelement/go-file-downloader/src/db/db-interfaces"
@@ -19,11 +20,24 @@ type PostgresDB struct {
 }
 
 func New() db_interfaces.Database[*sql.DB] {
+	pgUser := os.Getenv("PG_USER")
+	if pgUser == "" {
+		panic("Add PG_USER var in .env file!")
+	}
+	pgDbName := os.Getenv("PG_NAME")
+	if pgDbName == "" {
+		panic("Add PG_NAME var in .env file!")
+	}
+	pgPassword := os.Getenv("PG_PASSWORD")
+	if pgPassword == "" {
+		panic("Add PG_PASSWORD var in .env file!")
+	}
+
 	return &PostgresDB{
 		// user name of desktop, with docker it's `postgres`
-		user:     "paveldavidovich",
-		dbName:   "postgres",
-		password: "postgres",
+		user:     pgUser,
+		dbName:   pgDbName,
+		password: pgPassword,
 		host:     "localhost",
 		// host:     "postgres", with docker
 		port: 5432,
