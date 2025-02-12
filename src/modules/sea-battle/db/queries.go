@@ -49,10 +49,10 @@ func (q SeaBattleQueries) GetRoomsList() ([]DB_PlayerWithRoomJoinRow, error) {
 		if dbRow.PlayerEmail.Valid {
 			roomsData = append(roomsData, dbRow)
 		} else {
-			go func() {
-				q.DeleteRoom(dbRow.RoomId)
-				q.SaveAutoRoomDeletion(dbRow)
-			}()
+			// go func() {
+			// 	q.DeleteRoom(dbRow.RoomId)
+			// 	q.SaveAutoRoomDeletion(dbRow)
+			// }()
 		}
 	}
 
