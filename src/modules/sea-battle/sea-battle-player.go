@@ -177,7 +177,7 @@ func (p *Player) Disconnect(err *ErrorForDB) error {
 }
 
 func (p *Player) Broadcast() {
-	var errorMsg *ErrorForDB
+	var errorMsg = new(ErrorForDB)
 	defer p.Disconnect(errorMsg)
 
 	for {

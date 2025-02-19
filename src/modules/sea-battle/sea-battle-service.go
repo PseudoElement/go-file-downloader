@@ -71,7 +71,7 @@ func (this *SeaBattleService) getRoomsList() (RoomsListResp, error) {
 		}
 
 		player := RoomsListPlayerResp{
-			PlayerId:    string(dbRow.PlayerId.Int64),
+			PlayerId:    fmt.Sprint(dbRow.PlayerId.Int64),
 			PlayerEmail: dbRow.PlayerEmail.String,
 			IsOwner:     dbRow.IsOwner.Bool,
 		}
