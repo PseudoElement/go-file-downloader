@@ -137,14 +137,14 @@ func (this *SeaBattleService) disconnectUserFromRoom(roomId string, playerEmail 
 		return fmt.Errorf("Room is empty! You can't disconnect.")
 	}
 
-	err := playersOfRoom.CurrentPlayer.Disconnect()
+	err := playersOfRoom.CurrentPlayer.Disconnect(nil)
 	if err != nil {
 		return err
 	}
 
 	if playersOfRoom.CurrentPlayer.info.isOwner && playersOfRoom.Enemy != nil {
 		if err := this.queries.ChangeOwnerStatus(playersOfRoom.Enemy.info.id, true); err != nil {
-			this.queries.SaveNewError(room.id, err.Error())
+			this.queries.SaveNewError(room.name, err.Error())
 		}
 		playersOfRoom.Enemy.MakeAsOwner()
 	}

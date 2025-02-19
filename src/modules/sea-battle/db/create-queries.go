@@ -23,7 +23,8 @@ func (q SeaBattleQueries) CreateTables() error {
 func (q SeaBattleQueries) createErrorsTable() error {
 	_, err := q.db.Exec(`
 		CREATE TABLE IF NOT EXISTS seabattle_errors (
-			id SERIAL NOT NULL PRIMARY KEY, 
+			id SERIAL NOT NULL PRIMARY KEY,
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT current_timestamp,
             error VARCHAR(255) NOT NULL
 		);
 	`)

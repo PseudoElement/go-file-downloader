@@ -161,7 +161,11 @@ func (p *Player) Conn() *websocket.Conn {
 	return p.conn
 }
 
-func (p *Player) Disconnect() error {
+func (p *Player) Disconnect(err *ErrorForDB) error {
+	if err != nil {
+		p.queries().SaveNewError(p.room.name, err.Msg)
+	}
+
 	if err := p.Conn().Close(); err != nil {
 		return err
 	}
@@ -173,23 +177,27 @@ func (p *Player) Disconnect() error {
 }
 
 func (p *Player) Broadcast() {
-	defer p.Disconnect()
+	var errorMsg *ErrorForDB
+	defer p.Disconnect(errorMsg)
 
 	for {
 		_, bytesData, err := p.Conn().ReadMessage()
 
 		if err != nil {
-			log.Println("Broadcast_ReadMessage err =====> ", err)
+			log.Println("Broadcast_ReadMessage err =====> ", err, string(bytesData))
+			errorMsg.Msg = fmt.Sprintf("Broadcast_ReadMessage error: %v. BytesData: %v.", err.Error(), string(bytesData))
 			return
 		}
 
 		var msgBody SocketRequestMsg[any]
 		if err := json.Unmarshal(bytesData, &msgBody); err != nil {
 			log.Println("Broadcast_Unmarshal =====> ", err.Error())
+			errorMsg.Msg = err.Error()
 			return
 		}
 		if err = p.eventHandlers.HandleNewMsg(msgBody); err != nil {
 			log.Println("Broadcast_p.eventHandlers.HandleNewMsg  =====> ", err.Error())
+			errorMsg.Msg = err.Error()
 			return
 		}
 

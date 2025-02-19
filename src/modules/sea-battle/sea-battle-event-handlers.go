@@ -54,7 +54,7 @@ func (eh *EventHandlers) sendMessageToClients(msg any) {
 	for _, player := range eh.room.players {
 		if player.Conn() != nil {
 			if err := player.Conn().WriteJSON(msg); err != nil {
-				eh.queries().SaveNewError(player.room.id, err.Error())
+				eh.queries().SaveNewError(player.room.name, err.Error())
 			}
 		}
 	}
@@ -63,7 +63,7 @@ func (eh *EventHandlers) sendMessageToClients(msg any) {
 func (eh *EventHandlers) sendMessageToEnemy(enemy *Player, msg any) {
 	if enemy != nil && enemy.Conn() != nil {
 		if err := enemy.Conn().WriteJSON(msg); err != nil {
-			eh.queries().SaveNewError(enemy.room.id, err.Error())
+			eh.queries().SaveNewError(enemy.room.name, err.Error())
 		}
 	}
 }
@@ -93,7 +93,7 @@ func (eh *EventHandlers) handleResetGame(email string) error {
 	eh.room.isPlaying = false
 
 	if err := eh.queries().UpdatePositions(allPositions, eh.room.id); err != nil {
-		eh.queries().SaveNewError(eh.room.id, err.Error())
+		eh.queries().SaveNewError(eh.room.name, err.Error())
 	}
 
 	msg := SocketRespMsg[StartGameResp]{
@@ -153,7 +153,7 @@ func (eh *EventHandlers) handleDisconnection(email string) error {
 		emptyPositions := ""
 
 		if err := eh.queries().UpdatePositions(emptyPositions, eh.room.id); err != nil {
-			eh.queries().SaveNewError(eh.room.id, err.Error())
+			eh.queries().SaveNewError(eh.room.name, err.Error())
 		}
 	}
 
@@ -164,14 +164,14 @@ func (eh *EventHandlers) handleDisconnection(email string) error {
 
 	if wasOwner && enemy != nil {
 		if err := eh.queries().ChangeOwnerStatus(enemy.info.id, true); err != nil {
-			eh.queries().SaveNewError(eh.room.id, err.Error())
+			eh.queries().SaveNewError(eh.room.name, err.Error())
 		}
 		enemy.MakeAsOwner()
 	}
 
 	if isEmptyRoom := len(eh.room.players) == 0; isEmptyRoom {
 		if err := eh.queries().DeleteRoom(eh.room.id); err != nil {
-			eh.queries().SaveNewError(eh.room.id, err.Error())
+			eh.queries().SaveNewError(eh.room.name, err.Error())
 		}
 
 		eh.rooms = slice_utils_module.Filter(eh.rooms, func(r *Room, idx int) bool {
@@ -227,7 +227,7 @@ func (eh *EventHandlers) handlePlayerSetPositions(email string, playerPositions 
 	allPositions := player.info.id + ": " + playerPositions + PLAYER_POSITIONS_SEPARATOR + enemy.info.id + ": " + enemy.positions
 
 	if err := eh.queries().UpdatePositions(allPositions, eh.room.id); err != nil {
-		eh.queries().SaveNewError(player.room.id, err.Error())
+		eh.queries().SaveNewError(player.room.name, err.Error())
 	}
 
 	msg := SocketRespMsg[PlayerSetPositionsResp]{
@@ -278,7 +278,7 @@ func (eh *EventHandlers) handleAlreadyChecked(player *Player, enemy *Player, ste
 		},
 	}
 	if err := player.Conn().WriteJSON(steppingPlayerMsg); err != nil {
-		eh.queries().SaveNewError(player.room.id, err.Error())
+		eh.queries().SaveNewError(player.room.name, err.Error())
 	}
 
 	return nil
@@ -296,7 +296,7 @@ func (eh *EventHandlers) handleEmptyStep(player *Player, step NewStepReqMsg) err
 		},
 	}
 	if err := player.Conn().WriteJSON(steppingPlayerMsg); err != nil {
-		eh.queries().SaveNewError(player.room.id, err.Error())
+		eh.queries().SaveNewError(player.room.name, err.Error())
 	}
 
 	return nil

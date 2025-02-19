@@ -2,10 +2,10 @@ package seabattle_queries
 
 import "fmt"
 
-func (q SeaBattleQueries) SaveNewError(roomId string, errorMsg string) {
+func (q SeaBattleQueries) SaveNewError(roomName string, errorMsg string) {
 	info := fmt.Sprintf(
-		"Error in handleConnection: room_id - %s, error - %s",
-		roomId,
+		"Error: room_id - %s, error - %s",
+		roomName,
 		errorMsg,
 	)
 
