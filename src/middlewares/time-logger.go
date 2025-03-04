@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"bytes"
 	"io"
 	"log"
 	"net/http"
@@ -10,7 +11,9 @@ import (
 func TimeLoggerCommonMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		now := time.Now()
+
 		bytesBody, _ := io.ReadAll(req.Body)
+		req.Body = io.NopCloser(bytes.NewReader(bytesBody))
 
 		log.Printf("Start request from IP - %s", req.RemoteAddr)
 		log.Printf("Body: %s", string(bytesBody))
