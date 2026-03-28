@@ -15,6 +15,7 @@ import (
 	games_module "github.com/pseudoelement/go-file-downloader/src/modules/games"
 	healthcheck_module "github.com/pseudoelement/go-file-downloader/src/modules/healthcheck"
 	seabattle "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle"
+	"github.com/pseudoelement/go-file-downloader/src/modules/voicechat"
 	"github.com/pseudoelement/go-file-downloader/src/utils/logger"
 	"github.com/rs/cors"
 )
@@ -28,7 +29,22 @@ func getAllowedOrigins() []string {
 	return strings.Split(origins, "__")
 }
 
+type User struct {
+	name   string
+	isHost bool
+}
+
+func test() {
+	arr := []User{{name: "x21", isHost: true}, {name: "x22", isHost: false}}
+	var arr2 []User
+	arr2 = append(arr2, arr[0])
+	arr2[0].isHost = false
+
+	log.Println(arr2)
+}
+
 func main() {
+	test()
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()
 
@@ -48,11 +64,13 @@ func main() {
 	downloaderModule := downloader_module.NewModule(api, logger)
 	gamesModule := games_module.NewModule(api)
 	seabattleModule := seabattle.NewModule(db.Conn(), api)
+	voicechatModule := voicechat.NewModule(api)
 
 	healthModule.SetRoutes()
 	downloaderModule.SetRoutes()
 	gamesModule.SetRoutes()
 	seabattleModule.SetRoutes()
+	voicechatModule.SetRoutes()
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:     getAllowedOrigins(),
