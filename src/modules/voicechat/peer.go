@@ -15,14 +15,16 @@ type Peer struct {
 	name       string
 	isHost     bool
 	id         string
+	commands   map[models.WsAction]PeerWsCommand
 	conn       *websocket.Conn
 }
 
-func NewPeer(name, descriptor string, isHost bool) Peer {
-	return Peer{
-		descriptor: descriptor,
+func NewPeer(name, descriptor string, isHost bool, commands map[models.WsAction]PeerWsCommand) *Peer {
+	return &Peer{
 		name:       name,
 		isHost:     isHost,
+		descriptor: descriptor,
+		commands:   commands,
 		id:         common.RandomString(),
 	}
 }
@@ -38,12 +40,13 @@ func (p *Peer) Connect(ctx context.Context, w http.ResponseWriter, req *http.Req
 
 	conn, err := upgrader.Upgrade(w, req, nil)
 	p.conn = conn
-	go p._broadcast(context.TODO())
+
+	go p.broadcast(ctx)
 
 	return err
 }
 
-func (p *Peer) _broadcast(ctx context.Context) {
+func (p *Peer) broadcast(ctx context.Context) {
 	defer p.conn.Close()
 
 	for {
@@ -51,15 +54,44 @@ func (p *Peer) _broadcast(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			var wsAction models.WsActionJson
-			err := p.conn.ReadJSON(&wsAction)
-			log.Println("wsAction ==>", wsAction)
+			var wsMsg models.WsMsgJson
+			err := p.conn.ReadJSON(&wsMsg)
+			log.Println("wsMsg ==>", wsMsg)
 			if err != nil {
-				log.Println("[Peer_broadcast] read err:", err.Error())
+				log.Println("[Peer_Broadcast] read err:", err.Error())
 			}
+
+			wsAction := wsMsg.Action
+			command, ok := p.commands[wsAction]
+			if !ok {
+				msg := models.WsErrorMsg{Error: "unknown action type"}
+				p.conn.WriteJSON(msg)
+				log.Println("[Peer_Broadcast] unknown action type: ", wsAction)
+				continue
+			}
+
+			if wsAction == models.CONNECT {
+				connData, ok := wsMsg.Data.(models.ConnectionData)
+				if !ok {
+					msg := models.WsErrorMsg{Error: "invalid \"data\" field"}
+					p.conn.WriteJSON(msg)
+					log.Println("[Peer_Broadcast] invalid \"data\" field ")
+					continue
+				}
+				p.setDescriptor(connData.PeerDescriptor)
+			}
+
+			command.UpdateRoomState(p)
+			command.Send(p)
+
 			// @TODO
 			// 1. отправлять всем пирам в комнате свой дескриптор(+имя и айди) на подключение()
 			// 2. дескрипторы всех уже подключенных пиров брать из текущей VoiceRoom и сразу отправлять в сокете на клиент
 		}
 	}
+
+}
+
+func (p *Peer) setDescriptor(descriptor string) {
+	p.descriptor = descriptor
 }

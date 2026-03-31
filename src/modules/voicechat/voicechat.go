@@ -4,14 +4,12 @@ import "github.com/gorilla/mux"
 
 type VoicechatModule struct {
 	api           *mux.Router
-	connectionSrv ConnectionService
+	connectionSrv *ConnectionService
 }
 
 func NewModule(api *mux.Router) *VoicechatModule {
 	return &VoicechatModule{
-		api: api,
-		connectionSrv: ConnectionService{
-			rooms: make(map[string]*VoiceRoom, 10),
-		},
+		api:           api,
+		connectionSrv: NewConnectionService(),
 	}
 }
