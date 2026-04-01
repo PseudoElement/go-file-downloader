@@ -2,6 +2,7 @@ package voicechat
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/pseudoelement/go-file-downloader/src/modules/voicechat/models"
@@ -35,7 +36,10 @@ func (cs *ConnectionService) ConnectToRoom(w http.ResponseWriter, req *http.Requ
 
 	roomId := params["room_id"]
 	peerName := params["peer_name"]
-	voiceRoom := cs.rooms[roomId]
+	voiceRoom, ok := cs.rooms[roomId]
+	if !ok {
+		return fmt.Errorf("room with id %s not found", roomId)
+	}
 
 	wsCommands := CreatePeerCommandsMap(voiceRoom)
 	isHost := peerName == voiceRoom.hostName

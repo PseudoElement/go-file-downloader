@@ -1,5 +1,9 @@
 package models
 
+type MessageJson struct {
+	Message string `json:"message"`
+}
+
 type WsAction string
 
 type Response struct {

@@ -18,6 +18,9 @@ import (
 	"github.com/pseudoelement/go-file-downloader/src/modules/voicechat"
 	"github.com/pseudoelement/go-file-downloader/src/utils/logger"
 	"github.com/rs/cors"
+
+	docs "github.com/pseudoelement/go-file-downloader/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func getAllowedOrigins() []string {
@@ -34,17 +37,7 @@ type User struct {
 	isHost bool
 }
 
-func test() {
-	arr := []User{{name: "x21", isHost: true}, {name: "x22", isHost: false}}
-	var arr2 []User
-	arr2 = append(arr2, arr[0])
-	arr2[0].isHost = false
-
-	log.Println(arr2)
-}
-
 func main() {
-	test()
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()
 
@@ -74,10 +67,11 @@ func main() {
 
 	c := cors.New(cors.Options{
 		AllowedOrigins:     getAllowedOrigins(),
-		AllowedMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:     []string{"Content-Type", "Bearer", "Accept", "Authorization"},
 		OptionsPassthrough: true,
 		// AllowOriginFunc: func(origin string) bool {
+		// 	log.Println("ORIGIN==>", origin)
 		// 	return true
 		// },
 		AllowCredentials: true,
@@ -91,7 +85,10 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	handler := c.Handler(api)
+	docs.SwaggerInfo.BasePath = "/api/v1"
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+
+	handler := c.Handler(r)
 
 	fmt.Println("Listening port :8080")
 	log.Fatal(http.ListenAndServe(":8080", handler))

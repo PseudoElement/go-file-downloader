@@ -1,0 +1,82 @@
+definitions:
+  models.CreateRoomReqBody:
+    properties:
+      host_name:
+        type: string
+      max_peers:
+        type: integer
+      room_name:
+        type: string
+    type: object
+  models.MessageJson:
+    properties:
+      message:
+        type: string
+    type: object
+  models.Response:
+    properties:
+      data: {}
+      error: {}
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /voicechat/connect:
+    get:
+      consumes:
+      - application/json
+      description: connect to existing room
+      parameters:
+      - description: id of room
+        in: query
+        name: room_id
+        required: true
+        type: string
+      - description: username
+        in: query
+        name: peer_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Connect to room handler
+      tags:
+      - voicechat
+  /voicechat/create:
+    post:
+      consumes:
+      - application/json
+      description: create new room
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateRoomReqBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.MessageJson'
+      summary: Create room handler
+      tags:
+      - voicechat
+swagger: "2.0"

@@ -7,6 +7,15 @@ import (
 	api_module "github.com/pseudoelement/golang-utils/src/api"
 )
 
+// @Summary      Create room handler
+// @Description  create new room
+// @Tags         voicechat
+// @Accept       json
+// @Produce      json
+// @Param        request body models.CreateRoomReqBody true "Request body"
+// @Success      200  {object}  models.Response
+// @Failure      400  {object}  models.MessageJson
+// @Router       /voicechat/create [post]
 func (m *VoicechatModule) _createRoomHandler(w http.ResponseWriter, req *http.Request) {
 	body, err := api_module.ParseReqBody[models.CreateRoomReqBody](w, req)
 	if err != nil {
@@ -24,8 +33,23 @@ func (m *VoicechatModule) _createRoomHandler(w http.ResponseWriter, req *http.Re
 	api_module.SuccessResponse(w, resp, 200)
 }
 
+// @Summary      Connect to room handler
+// @Description  connect to existing room
+// @Tags         voicechat
+// @Accept       json
+// @Produce      json
+// @Param        room_id query string true "id of room"
+// @Param        peer_name query string true "username"
+// @Success      200  {object}  models.Response
+// @Failure      400  {object}  models.Response
+// @Router       /voicechat/connect [get]
 func (m *VoicechatModule) _connectToRoomHandler(w http.ResponseWriter, req *http.Request) {
 	err := m.connectionSrv.ConnectToRoom(w, req)
+	if err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
+		return
+	}
+
 	resp := models.Response{
 		Message: "Connected to room.",
 		Data:    nil,
