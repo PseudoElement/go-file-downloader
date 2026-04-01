@@ -15,51 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/voicechat/connect": {
-            "get": {
-                "description": "connect to existing room",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "voicechat"
-                ],
-                "summary": "Connect to room handler",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id of room",
-                        "name": "room_id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "username",
-                        "name": "peer_name",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.MessageJson"
-                        }
-                    }
-                }
-            }
-        },
         "/voicechat/create": {
             "post": {
                 "description": "create new room",
@@ -124,6 +79,80 @@ const docTemplate = `{
                         "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/voicechat/ws/connect": {
+            "get": {
+                "description": "connect to existing room",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "voicechat"
+                ],
+                "summary": "Connect to room handler",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id of room",
+                        "name": "room_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "username",
+                        "name": "peer_name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.MessageJson"
+                        }
+                    }
+                }
+            }
+        },
+        "/voicechat/ws/rooms": {
+            "get": {
+                "description": "connect to socket to get rooms changes",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "voicechat"
+                ],
+                "summary": "Rooms list ws handler",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.MessageJson"
                         }
                     }
                 }

@@ -11,10 +11,13 @@ type PeerWsCommand interface {
 	UpdateRoomState(senderPeer *Peer)
 }
 
-func CreatePeerCommandsMap(voiceRoom *VoiceRoom) map[models.WsAction]PeerWsCommand {
+func CreatePeerCommandsMap(
+	voiceRoom *VoiceRoom,
+	rooms map[string]*VoiceRoom,
+) map[models.WsAction]PeerWsCommand {
 	return map[models.WsAction]PeerWsCommand{
 		models.CONNECT:    &OnPeerConnect{voiceRoom},
-		models.DISCONNECT: &OnPeerDisconnect{voiceRoom},
+		models.DISCONNECT: &OnPeerDisconnect{voiceRoom, rooms},
 	}
 }
 
@@ -52,6 +55,7 @@ var _ PeerWsCommand = (*OnPeerConnect)(nil)
 
 type OnPeerDisconnect struct {
 	voiceRoom *VoiceRoom
+	rooms     map[string]*VoiceRoom
 }
 
 func (opd *OnPeerDisconnect) Send(senderPeer *Peer) {
@@ -90,6 +94,9 @@ func (opd *OnPeerDisconnect) Send(senderPeer *Peer) {
  */
 func (opc *OnPeerDisconnect) UpdateRoomState(senderPeer *Peer) {
 	opc.voiceRoom.RemovePeer(senderPeer.id)
+	if len(opc.voiceRoom.peers) == 0 {
+		go opc.voiceRoom.SetDeletionTimer(opc.rooms)
+	}
 }
 
 var _ PeerWsCommand = (*OnPeerDisconnect)(nil)

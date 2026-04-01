@@ -8,8 +8,11 @@ type VoicechatModule struct {
 }
 
 func NewModule(api *mux.Router) *VoicechatModule {
+	connectionSrv := NewConnectionService()
+	go connectionSrv.handleRoomsChanges()
+
 	return &VoicechatModule{
 		api:           api,
-		connectionSrv: NewConnectionService(),
+		connectionSrv: connectionSrv,
 	}
 }

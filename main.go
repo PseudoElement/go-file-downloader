@@ -32,11 +32,6 @@ func getAllowedOrigins() []string {
 	return strings.Split(origins, "__")
 }
 
-type User struct {
-	name   string
-	isHost bool
-}
-
 func main() {
 	r := mux.NewRouter()
 	api := r.PathPrefix("/api/v1").Subrouter()

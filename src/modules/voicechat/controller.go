@@ -45,8 +45,8 @@ func (m *VoicechatModule) _createRoomHandler(w http.ResponseWriter, req *http.Re
 // @Param        peer_name query string true "username"
 // @Success      200  {object}  models.Response
 // @Failure      400  {object}  models.MessageJson
-// @Router       /voicechat/connect [get]
-func (m *VoicechatModule) _connectToRoomHandler(w http.ResponseWriter, req *http.Request) {
+// @Router       /voicechat/ws/connect [get]
+func (m *VoicechatModule) _connectToRoomWsHandler(w http.ResponseWriter, req *http.Request) {
 	err := m.connectionSrv.ConnectToRoom(w, req)
 	if err != nil {
 		api_module.FailResponse(w, err.Error(), 400)
@@ -70,12 +70,34 @@ func (m *VoicechatModule) _connectToRoomHandler(w http.ResponseWriter, req *http
 // @Failure      400  {object}  models.Response
 // @Router       /voicechat/rooms [get]
 func (m *VoicechatModule) _getRoomsListHandler(w http.ResponseWriter, req *http.Request) {
-	rooms := m.connectionSrv.ToRoomsModel()
+	rooms := ApiRoomsToClientRooms(m.connectionSrv.rooms)
 	resp := models.GetRoomsListRespBody{
 		Response: models.Response{
 			Message: "Rooms list.",
 		},
 		Data: rooms,
+	}
+
+	api_module.SuccessResponse(w, resp, 200)
+}
+
+// @Summary      Rooms list ws handler
+// @Description  connect to socket to get rooms changes
+// @Tags         voicechat
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  models.Response
+// @Failure      400  {object}  models.MessageJson
+// @Router       /voicechat/ws/rooms [get]
+func (m *VoicechatModule) _getRoomsListWsHandler(w http.ResponseWriter, req *http.Request) {
+	err := m.connectionSrv.ListenToRoomsChanges(w, req)
+	if err != nil {
+		api_module.FailResponse(w, err.Error(), 400)
+		return
+	}
+	resp := models.Response{
+		Message: "Listening to rooms changes.",
+		Data:    nil,
 	}
 
 	api_module.SuccessResponse(w, resp, 200)
