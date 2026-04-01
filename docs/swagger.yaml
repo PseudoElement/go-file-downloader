@@ -8,17 +8,51 @@ definitions:
       room_name:
         type: string
     type: object
+  models.GetRoomsListRespBody:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.VoiceRoom'
+        type: array
+      message:
+        type: string
+    type: object
   models.MessageJson:
     properties:
       message:
         type: string
     type: object
+  models.Peer:
+    properties:
+      descriptor:
+        type: string
+      id:
+        type: string
+      is_host:
+        type: boolean
+      name:
+        type: string
+    type: object
   models.Response:
     properties:
       data: {}
-      error: {}
       message:
         type: string
+    type: object
+  models.VoiceRoom:
+    properties:
+      host_name:
+        type: string
+      id:
+        type: string
+      max_peers:
+        type: integer
+      name:
+        type: string
+      peers:
+        items:
+          $ref: '#/definitions/models.Peer'
+        type: array
     type: object
 info:
   contact: {}
@@ -49,7 +83,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/models.Response'
+            $ref: '#/definitions/models.MessageJson'
       summary: Connect to room handler
       tags:
       - voicechat
@@ -77,6 +111,25 @@ paths:
           schema:
             $ref: '#/definitions/models.MessageJson'
       summary: Create room handler
+      tags:
+      - voicechat
+  /voicechat/rooms:
+    get:
+      consumes:
+      - application/json
+      description: get rooms list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.GetRoomsListRespBody'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Response'
+      summary: Rooms list handler
       tags:
       - voicechat
 swagger: "2.0"

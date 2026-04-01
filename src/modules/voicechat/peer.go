@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/pseudoelement/go-file-downloader/src/modules/voicechat/models"
+	"github.com/pseudoelement/go-file-downloader/src/modules/voicechat/utils"
 	"github.com/pseudoelement/go-file-downloader/src/utils/common"
 )
 
@@ -39,11 +40,14 @@ func (p *Peer) Connect(ctx context.Context, w http.ResponseWriter, req *http.Req
 	}
 
 	conn, err := upgrader.Upgrade(w, req, nil)
+	if err != nil || conn == nil {
+		return err
+	}
 	p.conn = conn
 
 	go p.broadcast(ctx)
 
-	return err
+	return nil
 }
 
 func (p *Peer) broadcast(ctx context.Context) {
@@ -56,9 +60,11 @@ func (p *Peer) broadcast(ctx context.Context) {
 		default:
 			var wsMsg models.WsMsgJson
 			err := p.conn.ReadJSON(&wsMsg)
-			log.Println("wsMsg ==>", wsMsg)
+			log.Println("[Peer_Broadcast] msgBytes: ", wsMsg)
 			if err != nil {
-				log.Println("[Peer_Broadcast] read err:", err.Error())
+				msg := models.WsErrorMsg{Error: "invalid message"}
+				p.conn.WriteJSON(msg)
+				continue
 			}
 
 			wsAction := wsMsg.Action
@@ -71,11 +77,13 @@ func (p *Peer) broadcast(ctx context.Context) {
 			}
 
 			if wsAction == models.CONNECT {
-				connData, ok := wsMsg.Data.(models.ConnectionData)
-				if !ok {
-					msg := models.WsErrorMsg{Error: "invalid \"data\" field"}
+				var connData models.ConnectionData
+				err := utils.UnmarshalOmitEmpty(wsMsg.Data, &connData)
+				log.Println("[Peer_Broadcast] connData:", connData)
+				if err != nil {
+					msg := models.WsErrorMsg{Error: err.Error()}
 					p.conn.WriteJSON(msg)
-					log.Println("[Peer_Broadcast] invalid \"data\" field ")
+					log.Println("[Peer_Broadcast] unmarshal err: ", err)
 					continue
 				}
 				p.setDescriptor(connData.PeerDescriptor)
@@ -83,10 +91,6 @@ func (p *Peer) broadcast(ctx context.Context) {
 
 			command.UpdateRoomState(p)
 			command.Send(p)
-
-			// @TODO
-			// 1. отправлять всем пирам в комнате свой дескриптор(+имя и айди) на подключение()
-			// 2. дескрипторы всех уже подключенных пиров брать из текущей VoiceRoom и сразу отправлять в сокете на клиент
 		}
 	}
 

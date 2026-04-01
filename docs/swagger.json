@@ -43,7 +43,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/models.Response"
+                            "$ref": "#/definitions/models.MessageJson"
                         }
                     }
                 }
@@ -88,6 +88,35 @@
                     }
                 }
             }
+        },
+        "/voicechat/rooms": {
+            "get": {
+                "description": "get rooms list",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "voicechat"
+                ],
+                "summary": "Rooms list handler",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.GetRoomsListRespBody"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/models.Response"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -105,6 +134,20 @@
                 }
             }
         },
+        "models.GetRoomsListRespBody": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.VoiceRoom"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "models.MessageJson": {
             "type": "object",
             "properties": {
@@ -113,13 +156,52 @@
                 }
             }
         },
+        "models.Peer": {
+            "type": "object",
+            "properties": {
+                "descriptor": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "is_host": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Response": {
             "type": "object",
             "properties": {
                 "data": {},
-                "error": {},
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "models.VoiceRoom": {
+            "type": "object",
+            "properties": {
+                "host_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "max_peers": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "peers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Peer"
+                    }
                 }
             }
         }

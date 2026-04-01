@@ -1,9 +1,11 @@
 package models
 
+import "encoding/json"
+
 type WsMsgJson struct {
 	// CONNECT, DISCONNECT
-	Action WsAction `json:"action"`
-	Data   any      `json:"data"`
+	Action WsAction        `json:"action"`
+	Data   json.RawMessage `json:"data"`
 }
 
 type WsErrorMsg struct {
@@ -11,8 +13,8 @@ type WsErrorMsg struct {
 }
 
 type ConnectionData struct {
-	PeerName       string `json:"peer_name"`
-	PeerDescriptor string `json:"peer_descriptor"`
+	PeerName       string `json:"peer_name,omitempty"`
+	PeerDescriptor string `json:"peer_descriptor,omitempty"`
 }
 
 type DisconnectionData struct {
