@@ -50,8 +50,8 @@ func (opc *OnUserConnect) Send(senderUser *User, msg models.WsMsgJson) {
 			msg := models.WsConnectionMsgToOtherClient{
 				Action: models.USER_CONNECTED,
 				Data: models.ConnectionDataToClient{
-					ConnectedPeerName: senderUser.name,
-					ConnectedPeerId:   senderUser.id,
+					ConnectedUserName: senderUser.name,
+					ConnectedUserId:   senderUser.id,
 				},
 			}
 			err := peer.conn.WriteJSON(msg)
@@ -59,6 +59,14 @@ func (opc *OnUserConnect) Send(senderUser *User, msg models.WsMsgJson) {
 				log.Println("[OnUserConnect_Send] err:", err.Error())
 			}
 		}
+	}
+
+	opc.voiceRoom.roomsChan <- models.WsMsgToClientJson{
+		Action: models.USER_JOINED,
+		Data: models.ConnectionDataToClient{
+			ConnectedUserName: senderUser.name,
+			ConnectedUserId:   senderUser.id,
+		},
 	}
 }
 
@@ -102,6 +110,16 @@ func (opd *OnUserDisconnect) Send(senderUser *User, msg models.WsMsgJson) {
 			}
 		}
 	}
+
+	opd.voiceRoom.roomsChan <- models.WsMsgToClientJson{
+		Action: models.USER_LEFT,
+		Data: models.DisconnectionDataToClient{
+			DisconnectedUserId:   senderUser.id,
+			DisconnectedUserName: senderUser.name,
+			NewHostName:          hostUser.name,
+			NewHostId:            hostUser.id,
+		},
+	}
 }
 
 func (opc *OnUserDisconnect) UpdateRoomState(senderPeer *User) {
@@ -139,7 +157,10 @@ func (opd *OnOffer) Send(senderUser *User, msg models.WsMsgJson) {
 		if user.id == offerMsgData.TargetUserId {
 			msg := models.WsOfferMessageToClient{
 				Action: models.OFFER_CREATED,
-				Data:   offerMsgData,
+				Data: models.OfferDataToClient{
+					OfferingUserId:         offerMsgData.OfferingUserId,
+					OfferingUserDescriptor: offerMsgData.OfferingUserDescriptor,
+				},
 			}
 			err := user.conn.WriteJSON(msg)
 			if err != nil {
@@ -179,7 +200,10 @@ func (opd *OnAnswer) Send(senderUser *User, msg models.WsMsgJson) {
 		if user.id == answerMsgData.TargetUserId {
 			msg := models.WsAnswerMessageToClient{
 				Action: models.ANSWER_CREATED,
-				Data:   answerMsgData,
+				Data: models.AnswerDataToClient{
+					AnsweringUserId:         answerMsgData.AnsweringUserId,
+					AnsweringUserDescriptor: answerMsgData.AnsweringUserDescriptor,
+				},
 			}
 			err := user.conn.WriteJSON(msg)
 			if err != nil {

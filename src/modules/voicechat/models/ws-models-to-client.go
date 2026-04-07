@@ -12,8 +12,8 @@ type WsErrorMsg struct {
 /*---------------------------------------------Message Data--------------------------------------------------------------- */
 
 type ConnectionDataToClient struct {
-	ConnectedPeerName string `json:"connected_peer_name"`
-	ConnectedPeerId   string `json:"connected_peer_id"`
+	ConnectedUserName string `json:"connected_user_name"`
+	ConnectedUserId   string `json:"connected_user_id"`
 }
 
 type DisconnectionDataToClient struct {
@@ -25,6 +25,16 @@ type DisconnectionDataToClient struct {
 
 type RoomDataToClient struct {
 	Room VoiceRoom `json:"room"`
+}
+
+type OfferDataToClient struct {
+	OfferingUserId         string `json:"offering_user_id"`
+	OfferingUserDescriptor string `json:"offering_user_descriptor"`
+}
+
+type AnswerDataToClient struct {
+	AnsweringUserId         string `json:"answering_user_id"`
+	AnsweringUserDescriptor string `json:"answering_user_descriptor"`
 }
 
 /*------------------------------------------------Messages to client------------------------------------------------------------ */
@@ -45,13 +55,13 @@ type WsDisconnectionMsgToClient struct {
 }
 
 type WsOfferMessageToClient struct {
-	Action WsAction            `json:"action"`
-	Data   OfferDataFromClient `json:"data"`
+	Action WsAction          `json:"action"`
+	Data   OfferDataToClient `json:"data"`
 }
 
 type WsAnswerMessageToClient struct {
-	Action WsAction             `json:"action"`
-	Data   AnswerDataFromClient `json:"data"`
+	Action WsAction           `json:"action"`
+	Data   AnswerDataToClient `json:"data"`
 }
 
 /*----------------------------------------------------Global rooms messages-------------------------------------------------------- */
@@ -64,6 +74,11 @@ type WsErrorMsgToClient struct {
 type WsRoomCreatedMsgToClient struct {
 	Action WsAction         `json:"action"`
 	Data   RoomDataToClient `json:"data"`
+}
+
+type WsUserJoinedMsgToClient struct {
+	Action WsAction               `json:"action"`
+	Data   ConnectionDataToClient `json:"data"`
 }
 
 type WsRoomRemovedMsgToClient struct {

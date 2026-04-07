@@ -1,10 +1,13 @@
 package models
 
-// global events
+// global events to client
 const (
-	ROOM_CREATED WsAction = "ROOM_CREATED"
-	ROOM_REMOVED WsAction = "ROOM_REMOVED"
-	ERROR        WsAction = "ERROR"
+	ROOM_CREATED  WsAction = "ROOM_CREATED"
+	ROOM_REMOVED  WsAction = "ROOM_REMOVED"
+	USER_JOINED   WsAction = "USER_JOINED"
+	USER_LEFT     WsAction = "USER_LEFT"
+	GET_ALL_ROOMS WsAction = "GET_ALL_ROOMS"
+	ERROR         WsAction = "ERROR"
 )
 
 // inner room events from client
