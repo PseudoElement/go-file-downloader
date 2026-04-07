@@ -9,20 +9,20 @@ import (
 )
 
 type VoiceRoom struct {
-	peers               []*Peer
+	users               []*User
 	name                string
 	id                  string
-	maxPeers            int
+	maxUsers            int
 	hostName            string
 	deletionTimerActive bool
 	roomsChan           chan<- models.WsMsgToClientJson
 }
 
-func NewVoiceRoom(name string, maxPeers int, hostName string, roomsChan chan<- models.WsMsgToClientJson) *VoiceRoom {
+func NewVoiceRoom(name string, maxUsers int, hostName string, roomsChan chan<- models.WsMsgToClientJson) *VoiceRoom {
 	return &VoiceRoom{
-		peers:               make([]*Peer, 0),
+		users:               make([]*User, 0),
 		name:                name,
-		maxPeers:            maxPeers,
+		maxUsers:            maxUsers,
 		hostName:            hostName,
 		deletionTimerActive: false,
 		id:                  common.RandomString(),
@@ -36,11 +36,11 @@ func (vr *VoiceRoom) SetDeletionTimer(rooms map[string]*VoiceRoom) {
 
 	vr.deletionTimerActive = true
 	time.Sleep(1 * time.Minute)
-	if len(vr.peers) == 0 {
+	if len(vr.users) == 0 {
 		roomModel := ApiRoomToClientRoom(vr)
 		vr.roomsChan <- models.WsMsgToClientJson{
 			Action: models.ROOM_REMOVED,
-			Data: models.RoomData{
+			Data: models.RoomDataToClient{
 				Room: roomModel,
 			},
 		}
@@ -50,24 +50,24 @@ func (vr *VoiceRoom) SetDeletionTimer(rooms map[string]*VoiceRoom) {
 	vr.deletionTimerActive = false
 }
 
-func (vr *VoiceRoom) AddPeer(peer *Peer) {
-	vr.peers = append(vr.peers, peer)
+func (vr *VoiceRoom) AddUser(peer *User) {
+	vr.users = append(vr.users, peer)
 }
 
-func (vr *VoiceRoom) RemovePeer(id string) {
-	var filteredPeers []*Peer
-	var removedPeer *Peer
-	for _, peer := range vr.peers {
-		if peer.id == id {
-			removedPeer = peer
+func (vr *VoiceRoom) RemoveUser(id string) {
+	var filteredUsers []*User
+	var removedUser *User
+	for _, user := range vr.users {
+		if user.id == id {
+			removedUser = user
 		} else {
-			filteredPeers = append(filteredPeers, peer)
+			filteredUsers = append(filteredUsers, user)
 		}
 	}
 
-	if removedPeer.isHost && len(filteredPeers) > 0 {
-		filteredPeers[0].isHost = true
+	if removedUser.isHost && len(filteredUsers) > 0 {
+		filteredUsers[0].isHost = true
 	}
 
-	vr.peers = filteredPeers
+	vr.users = filteredUsers
 }

@@ -3,7 +3,7 @@ definitions:
     properties:
       host_name:
         type: string
-      max_peers:
+      max_users:
         type: integer
       room_name:
         type: string
@@ -22,21 +22,13 @@ definitions:
       message:
         type: string
     type: object
-  models.Peer:
+  models.User:
     properties:
-      descriptor:
-        type: string
       id:
         type: string
       is_host:
         type: boolean
       name:
-        type: string
-    type: object
-  models.Response:
-    properties:
-      data: {}
-      message:
         type: string
     type: object
   models.VoiceRoom:
@@ -45,13 +37,13 @@ definitions:
         type: string
       id:
         type: string
-      max_peers:
+      max_users:
         type: integer
       name:
         type: string
-      peers:
+      users:
         items:
-          $ref: '#/definitions/models.Peer'
+          $ref: '#/definitions/models.User'
         type: array
     type: object
 info:
@@ -75,7 +67,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Response'
+            $ref: '#/definitions/models.MessageJson'
         "400":
           description: Bad Request
           schema:
@@ -95,10 +87,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/models.GetRoomsListRespBody'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Response'
       summary: Rooms list handler
       tags:
       - voicechat
@@ -124,7 +112,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Response'
+            $ref: '#/definitions/models.MessageJson'
         "400":
           description: Bad Request
           schema:
@@ -143,7 +131,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/models.Response'
+            $ref: '#/definitions/models.MessageJson'
         "400":
           description: Bad Request
           schema:

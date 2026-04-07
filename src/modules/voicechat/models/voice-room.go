@@ -1,16 +1,15 @@
 package models
 
-type Peer struct {
-	Descriptor string `json:"descriptor"`
-	Name       string `json:"name"`
-	IsHost     bool   `json:"is_host"`
-	Id         string `json:"id"`
+type User struct {
+	Name   string `json:"name"`
+	IsHost bool   `json:"is_host"`
+	Id     string `json:"id"`
 }
 
 type VoiceRoom struct {
-	Peers    []Peer `json:"peers"`
+	Users    []User `json:"users"`
 	Name     string `json:"name"`
 	Id       string `json:"id"`
-	MaxPeers int    `json:"max_peers"`
+	MaxUsers int    `json:"max_users"`
 	HostName string `json:"host_name"`
 }

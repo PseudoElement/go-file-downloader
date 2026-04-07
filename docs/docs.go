@@ -43,7 +43,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Response"
+                            "$ref": "#/definitions/models.MessageJson"
                         }
                     },
                     "400": {
@@ -73,12 +73,6 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/models.GetRoomsListRespBody"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/models.Response"
                         }
                     }
                 }
@@ -117,7 +111,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Response"
+                            "$ref": "#/definitions/models.MessageJson"
                         }
                     },
                     "400": {
@@ -146,7 +140,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/models.Response"
+                            "$ref": "#/definitions/models.MessageJson"
                         }
                     },
                     "400": {
@@ -166,7 +160,7 @@ const docTemplate = `{
                 "host_name": {
                     "type": "string"
                 },
-                "max_peers": {
+                "max_users": {
                     "type": "integer"
                 },
                 "room_name": {
@@ -196,12 +190,9 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Peer": {
+        "models.User": {
             "type": "object",
             "properties": {
-                "descriptor": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "string"
                 },
@@ -209,15 +200,6 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.Response": {
-            "type": "object",
-            "properties": {
-                "data": {},
-                "message": {
                     "type": "string"
                 }
             }
@@ -231,16 +213,16 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "max_peers": {
+                "max_users": {
                     "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
-                "peers": {
+                "users": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/models.Peer"
+                        "$ref": "#/definitions/models.User"
                     }
                 }
             }

@@ -25,14 +25,14 @@ func NewConnectionService() *ConnectionService {
 }
 
 func (cs *ConnectionService) CreateRoom(reqBody models.CreateRoomReqBody) *VoiceRoom {
-	voiceRoom := NewVoiceRoom(reqBody.RoomName, reqBody.MaxPeers, reqBody.HostName, cs.roomsChan)
+	voiceRoom := NewVoiceRoom(reqBody.RoomName, reqBody.MaxUsers, reqBody.HostName, cs.roomsChan)
 	cs.rooms[voiceRoom.id] = voiceRoom
 	log.Printf("[ConnectionService_CreateRoom] room created: %+v", *voiceRoom)
 
 	roomModel := ApiRoomToClientRoom(voiceRoom)
 	cs.roomsChan <- models.WsMsgToClientJson{
 		Action: models.ROOM_CREATED,
-		Data: models.RoomData{
+		Data: models.RoomDataToClient{
 			Room: roomModel,
 		},
 	}
@@ -42,34 +42,38 @@ func (cs *ConnectionService) CreateRoom(reqBody models.CreateRoomReqBody) *Voice
 	return voiceRoom
 }
 
+/**
+ * В этом методе проверяется возможность подключить нвоого юезра к сокету в комнате
+ * Если возможно - то в комнату добалвяется новый юзер и для него открывается сокет соединение
+ */
 func (cs *ConnectionService) ConnectToRoom(w http.ResponseWriter, req *http.Request) error {
-	params, e := api_module.MapQueryParams(req, "room_id", "peer_name")
+	params, e := api_module.MapQueryParams(req, "room_id", "user_name")
 	if e != nil {
 		return e
 	}
 
 	roomId := params["room_id"]
-	peerName := params["peer_name"]
+	userName := params["user_name"]
 	voiceRoom, ok := cs.rooms[roomId]
 	if !ok {
 		return fmt.Errorf("Room with id %s not found.", roomId)
 	}
 
-	if voiceRoom.maxPeers >= len(voiceRoom.peers) {
+	if voiceRoom.maxUsers >= len(voiceRoom.users) {
 		return fmt.Errorf("Room is full.")
 	}
 
-	found := cs.findPeer(voiceRoom, peerName)
+	found := cs.findUserByName(voiceRoom, userName)
 	if found != nil {
-		return fmt.Errorf("User %s already connected.", peerName)
+		return fmt.Errorf("User %s already connected.", userName)
 	}
 
 	wsCommands := CreatePeerCommandsMap(voiceRoom, cs.rooms)
-	isHost := peerName == voiceRoom.hostName
-	peer := NewPeer(peerName, "", isHost, wsCommands)
-	voiceRoom.AddPeer(peer)
+	isHost := userName == voiceRoom.hostName
+	user := NewUser(userName, isHost, wsCommands)
+	voiceRoom.AddUser(user)
 
-	err := peer.Connect(context.TODO(), w, req)
+	err := user.Connect(context.TODO(), w, req)
 
 	return err
 }
@@ -103,8 +107,8 @@ func (cs *ConnectionService) handleRoomsChanges() {
 	}
 }
 
-func (cs *ConnectionService) findPeer(voiceRoom *VoiceRoom, peerName string) *Peer {
-	for _, peer := range voiceRoom.peers {
+func (cs *ConnectionService) findUserByName(voiceRoom *VoiceRoom, peerName string) *User {
+	for _, peer := range voiceRoom.users {
 		if peer.name == peerName {
 			return peer
 		}
