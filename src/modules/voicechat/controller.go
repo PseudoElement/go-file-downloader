@@ -25,8 +25,7 @@ func (m *VoicechatModule) _createRoomHandler(w http.ResponseWriter, req *http.Re
 
 	r := m.connectionSrv.CreateRoom(body)
 	data := models.CreateRoomRespBody{
-		Message: "Room created.",
-		Data: models.MinimalRoomData{
+		CreatedRoom: models.MinimalRoomData{
 			RoomId:   r.id,
 			RoomName: r.name,
 		},
@@ -59,6 +58,33 @@ func (m *VoicechatModule) _connectToRoomWsHandler(w http.ResponseWriter, req *ht
 	api_module.SuccessResponse(w, resp, 200)
 }
 
+// @Summary      Room
+// @Description  get room by id
+// @Tags         voicechat
+// @Accept       json
+// @Produce      json
+// @Param        room_id query string true "id of room"
+// @Success      200  {object}  models.GetRoomsListRespBody "returns { room: null } if not found"
+// @Router       /voicechat/room [get]
+func (m *VoicechatModule) _getRoomByIdHandler(w http.ResponseWriter, req *http.Request) {
+	params, e := api_module.MapQueryParams(req, "room_id")
+	if e != nil {
+		api_module.FailResponse(w, e.Error(), e.Status())
+		return
+	}
+	rooms := ApiRoomsToClientRooms(m.connectionSrv.rooms)
+	var foundRoom *models.VoiceRoom
+	for _, room := range rooms {
+		if room.Id == params["room_id"] {
+			foundRoom = &room
+		}
+	}
+	resp := models.GetRoomByIdRespBody{
+		Room: foundRoom,
+	}
+	api_module.SuccessResponse(w, resp, 200)
+}
+
 // @Summary      Rooms list handler
 // @Description  get rooms list
 // @Tags         voicechat
@@ -69,8 +95,7 @@ func (m *VoicechatModule) _connectToRoomWsHandler(w http.ResponseWriter, req *ht
 func (m *VoicechatModule) _getRoomsListHandler(w http.ResponseWriter, req *http.Request) {
 	rooms := ApiRoomsToClientRooms(m.connectionSrv.rooms)
 	resp := models.GetRoomsListRespBody{
-		Message: "Rooms list.",
-		Data:    rooms,
+		Rooms: rooms,
 	}
 
 	api_module.SuccessResponse(w, resp, 200)

@@ -12,15 +12,17 @@ import (
 )
 
 type ConnectionService struct {
-	rooms     map[string]*VoiceRoom
-	roomsChan chan models.WsMsgToClientJson
-	conns     *[]*websocket.Conn
+	rooms       map[string]*VoiceRoom
+	roomsChan   chan models.WsMsgToClientJson
+	globalConns *[]*websocket.Conn
 }
 
 func NewConnectionService() *ConnectionService {
+	globalConns := make([]*websocket.Conn, 0)
 	return &ConnectionService{
-		rooms:     make(map[string]*VoiceRoom, 10),
-		roomsChan: make(chan models.WsMsgToClientJson),
+		rooms:       make(map[string]*VoiceRoom, 10),
+		roomsChan:   make(chan models.WsMsgToClientJson),
+		globalConns: &globalConns,
 	}
 }
 
@@ -91,17 +93,18 @@ func (cs *ConnectionService) ListenToRoomsChanges(w http.ResponseWriter, req *ht
 	if err != nil || conn == nil {
 		return err
 	}
-	*cs.conns = append(*cs.conns, conn)
+	*cs.globalConns = append(*cs.globalConns, conn)
 
 	return nil
 }
 
 func (cs *ConnectionService) handleRoomsChanges() {
 	for msg := range cs.roomsChan {
-		for _, conn := range *cs.conns {
+		for _, conn := range *cs.globalConns {
 			err := conn.WriteJSON(msg)
 			if err != nil {
 				log.Println("[ConnectionService_ListenRoomsChan] write err:", err)
+				conn.Close()
 			}
 		}
 	}

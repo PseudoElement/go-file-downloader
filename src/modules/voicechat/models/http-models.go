@@ -16,11 +16,13 @@ type MinimalRoomData struct {
 }
 
 type CreateRoomRespBody struct {
-	Message string          `json:"message"`
-	Data    MinimalRoomData `json:"data"`
+	CreatedRoom MinimalRoomData `json:"created_room"`
 }
 
 type GetRoomsListRespBody struct {
-	Message string      `json:"message"`
-	Data    []VoiceRoom `json:"data"`
+	Rooms []VoiceRoom `json:"rooms"`
+}
+
+type GetRoomByIdRespBody struct {
+	Room *VoiceRoom `json:"room"`
 }

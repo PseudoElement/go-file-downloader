@@ -38,7 +38,7 @@ func (eh *EventHandlers) HandleNewMsg(msgBody SocketRequestMsg[any]) error {
 	case RESET:
 		return eh.handleResetGame(msgBody.Email)
 	default:
-		fmt.Errorf("Unknown msgBody type.")
+		fmt.Printf("Unknown msgBody type.\n")
 		eh.sendMessageToClients(struct {
 			Message string `json:"message"`
 		}{Message: "Unknown msgBody type."})

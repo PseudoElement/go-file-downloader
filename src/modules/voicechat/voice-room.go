@@ -67,6 +67,7 @@ func (vr *VoiceRoom) RemoveUser(id string) {
 
 	if removedUser.isHost && len(filteredUsers) > 0 {
 		filteredUsers[0].isHost = true
+		vr.hostName = filteredUsers[0].name
 	}
 
 	vr.users = filteredUsers

@@ -10,12 +10,10 @@ definitions:
     type: object
   models.GetRoomsListRespBody:
     properties:
-      data:
+      rooms:
         items:
           $ref: '#/definitions/models.VoiceRoom'
         type: array
-      message:
-        type: string
     type: object
   models.MessageJson:
     properties:
@@ -73,6 +71,27 @@ paths:
           schema:
             $ref: '#/definitions/models.MessageJson'
       summary: Create room handler
+      tags:
+      - voicechat
+  /voicechat/room:
+    get:
+      consumes:
+      - application/json
+      description: get room by id
+      parameters:
+      - description: id of room
+        in: query
+        name: room_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'returns { room: null } if not found'
+          schema:
+            $ref: '#/definitions/models.GetRoomsListRespBody'
+      summary: Room
       tags:
       - voicechat
   /voicechat/rooms:

@@ -55,6 +55,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/voicechat/room": {
+            "get": {
+                "description": "get room by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "voicechat"
+                ],
+                "summary": "Room",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id of room",
+                        "name": "room_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "returns { room: null } if not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.GetRoomsListRespBody"
+                        }
+                    }
+                }
+            }
+        },
         "/voicechat/rooms": {
             "get": {
                 "description": "get rooms list",
@@ -171,14 +203,11 @@ const docTemplate = `{
         "models.GetRoomsListRespBody": {
             "type": "object",
             "properties": {
-                "data": {
+                "rooms": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/models.VoiceRoom"
                     }
-                },
-                "message": {
-                    "type": "string"
                 }
             }
         },
