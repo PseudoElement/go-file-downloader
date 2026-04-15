@@ -26,6 +26,7 @@ func NewVoiceRoom(name string, maxUsers int, hostName string, roomsChan chan<- m
 		hostName:            hostName,
 		deletionTimerActive: false,
 		id:                  common.RandomString(),
+		roomsChan:           roomsChan,
 	}
 }
 
@@ -65,7 +66,7 @@ func (vr *VoiceRoom) RemoveUser(id string) {
 		}
 	}
 
-	if removedUser.isHost && len(filteredUsers) > 0 {
+	if removedUser != nil && removedUser.isHost && len(filteredUsers) > 0 {
 		filteredUsers[0].isHost = true
 		vr.hostName = filteredUsers[0].name
 	}

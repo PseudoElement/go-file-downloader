@@ -61,20 +61,21 @@ func (cs *ConnectionService) ConnectToRoom(w http.ResponseWriter, req *http.Requ
 		return fmt.Errorf("Room with id %s not found.", roomId)
 	}
 
-	if voiceRoom.maxUsers >= len(voiceRoom.users) {
+	if len(voiceRoom.users) >= voiceRoom.maxUsers {
 		return fmt.Errorf("Room is full.")
 	}
 
 	found := cs.findUserByName(voiceRoom, userName)
 	if found != nil {
-		return fmt.Errorf("User %s already connected.", userName)
+		found.conn.Close()
+		err := found.Connect(context.TODO(), w, req)
+		return err
 	}
 
 	wsCommands := CreatePeerCommandsMap(voiceRoom, cs.rooms)
 	isHost := userName == voiceRoom.hostName
-	user := NewUser(userName, isHost, wsCommands)
-	voiceRoom.AddUser(user)
 
+	user := NewUser(userName, isHost, wsCommands)
 	err := user.Connect(context.TODO(), w, req)
 
 	return err

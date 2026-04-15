@@ -1,6 +1,7 @@
 package voicechat
 
 import (
+	"encoding/json"
 	"log"
 
 	"github.com/pseudoelement/go-file-downloader/src/modules/voicechat/models"
@@ -20,7 +21,7 @@ func CreatePeerCommandsMap(
 	rooms map[string]*VoiceRoom,
 ) map[models.WsAction]UserWsCommand {
 	return map[models.WsAction]UserWsCommand{
-		models.CONNECT:    &OnUserConnect{voiceRoom},
+		models.CONNECT:    &OnUserConnect{voiceRoom, rooms},
 		models.DISCONNECT: &OnUserDisconnect{voiceRoom, rooms},
 		models.ANSWER:     &OnAnswer{voiceRoom, rooms},
 		models.OFFER:      &OnOffer{voiceRoom, rooms},
@@ -31,20 +32,22 @@ func CreatePeerCommandsMap(
 
 type OnUserConnect struct {
 	voiceRoom *VoiceRoom
+	rooms     map[string]*VoiceRoom
 }
 
 func (opc *OnUserConnect) Send(senderUser *User, msg models.WsMsgJson) {
-	for _, peer := range opc.voiceRoom.users {
-		if peer.id == senderUser.id {
+	for _, user := range opc.voiceRoom.users {
+		if user.id == senderUser.id {
 			msg := models.WsConnectionMsgToNewConnectedClient{
 				Action: models.YOU_CONNECTED,
 				Data: models.RoomDataToClient{
 					Room: ApiRoomToClientRoom(opc.voiceRoom),
 				},
 			}
-			err := peer.conn.WriteJSON(msg)
+			err := user.conn.WriteJSON(msg)
 			if err != nil {
-				log.Println("[OnUserConnect_Send] err:", err.Error())
+				log.Println("[OnUserConnect_Send] YOU_CONNECTED err:", err.Error())
+				_disconnectUserOnSendConnectionError(user, opc)
 			}
 		} else {
 			msg := models.WsConnectionMsgToOtherClient{
@@ -54,9 +57,11 @@ func (opc *OnUserConnect) Send(senderUser *User, msg models.WsMsgJson) {
 					ConnectedUserId:   senderUser.id,
 				},
 			}
-			err := peer.conn.WriteJSON(msg)
+			err := user.conn.WriteJSON(msg)
+			// disconnect failed coonection and send message to sockets
 			if err != nil {
-				log.Println("[OnUserConnect_Send] err:", err.Error())
+				log.Println("[OnUserConnect_Send] USER_CONNECTED err:", err.Error())
+				_disconnectUserOnSendConnectionError(user, opc)
 			}
 		}
 	}
@@ -75,6 +80,24 @@ func (opc *OnUserConnect) UpdateRoomState(senderPeer *User) {
 }
 
 var _ UserWsCommand = (*OnUserConnect)(nil)
+
+func _disconnectUserOnSendConnectionError(user *User, opc *OnUserConnect) {
+	user.conn.Close()
+	onUserDisconnect := OnUserDisconnect{opc.voiceRoom, opc.rooms}
+	dataBytes, err := json.Marshal(models.DisconnectionDataFromClient{
+		DisconnectedUserName: user.name,
+		DisconnectedUserId:   user.id,
+	})
+	if err != nil {
+		log.Println("[OnUserConnect_Send] json.Marshal err:", err.Error())
+		return
+	}
+	onUserDisconnect.Send(user, models.WsMsgJson{
+		Action: models.DISCONNECT,
+		Data:   dataBytes,
+	})
+	onUserDisconnect.UpdateRoomState(user)
+}
 
 /*-------------------------------------------------------------------------------------------------------- */
 
@@ -104,9 +127,11 @@ func (opd *OnUserDisconnect) Send(senderUser *User, msg models.WsMsgJson) {
 					NewHostId:            hostUser.id,
 				},
 			}
-			err := user.conn.WriteJSON(msg)
-			if err != nil {
-				log.Println("[OnUserDisconnect_Send] err:", err.Error())
+			if user.conn != nil {
+				err := user.conn.WriteJSON(msg)
+				if err != nil {
+					log.Println("[OnUserDisconnect_Send] err:", err.Error())
+				}
 			}
 		}
 	}
@@ -152,6 +177,8 @@ func (opd *OnOffer) Send(senderUser *User, msg models.WsMsgJson) {
 		log.Println("[OnOffer_Send] invalid offer message")
 		return
 	}
+
+	log.Printf("[OnOffer] offer from %s to %s", offerMsgData.OfferingUserId, offerMsgData.TargetUserId)
 
 	for _, user := range opd.voiceRoom.users {
 		if user.id == offerMsgData.TargetUserId {

@@ -2,6 +2,7 @@ package voicechat
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -57,13 +58,29 @@ func (u *User) broadcast(ctx context.Context) {
 		default:
 			var wsMsg models.WsMsgJson
 			err := u.conn.ReadJSON(&wsMsg)
-			log.Println("[Peer_Broadcast] msgBytes: ", wsMsg)
+			log.Printf("[Peer_Broadcast] action: %s, data: %s\n", wsMsg.Action, string(wsMsg.Data))
 			if err != nil {
 				msg := models.WsErrorMsgToClient{
 					Action: models.ERROR,
 					Data:   models.WsErrorMsg{Error: "invalid message"},
 				}
-				u.conn.WriteJSON(msg)
+				err := u.conn.WriteJSON(msg)
+				// if err - it means connection broken and we need to close this connection and remove user
+				if err != nil {
+					log.Printf("[Peer_Broadcast] disconnect failed user %+v\n", u)
+					u.conn.Close()
+					onUserDisconnect := u.commands[models.DISCONNECT]
+					dataBytes, _ := json.Marshal(models.DisconnectionDataFromClient{
+						DisconnectedUserName: u.name,
+						DisconnectedUserId:   u.id,
+					})
+					onUserDisconnect.UpdateRoomState(u)
+					onUserDisconnect.Send(u, models.WsMsgJson{
+						Action: models.DISCONNECT,
+						Data:   dataBytes,
+					})
+					return
+				}
 				continue
 			}
 
