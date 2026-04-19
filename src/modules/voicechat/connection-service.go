@@ -73,7 +73,7 @@ func (cs *ConnectionService) ConnectToRoom(w http.ResponseWriter, req *http.Requ
 	}
 
 	wsCommands := CreatePeerCommandsMap(voiceRoom, cs.rooms)
-	isHost := userName == voiceRoom.hostName
+	isHost := userName == voiceRoom.hostName || len(voiceRoom.users) == 0
 
 	user := NewUser(userName, isHost, wsCommands)
 	err := user.Connect(context.TODO(), w, req)
@@ -103,12 +103,24 @@ func (cs *ConnectionService) handleRoomsChanges() {
 	for msg := range cs.roomsChan {
 		for _, conn := range *cs.globalConns {
 			err := conn.WriteJSON(msg)
+			// delete broken connection
 			if err != nil {
 				log.Println("[ConnectionService_ListenRoomsChan] write err:", err)
-				conn.Close()
+				cs.removeBrokenGlobalConnection(conn)
 			}
 		}
 	}
+}
+
+func (cs *ConnectionService) removeBrokenGlobalConnection(brokenConn *websocket.Conn) {
+	brokenConn.Close()
+	var updatedGlobalConns []*websocket.Conn = make([]*websocket.Conn, 0)
+	for _, conn := range *cs.globalConns {
+		if conn != brokenConn {
+			updatedGlobalConns = append(updatedGlobalConns, conn)
+		}
+	}
+	*cs.globalConns = updatedGlobalConns
 }
 
 func (cs *ConnectionService) findUserByName(voiceRoom *VoiceRoom, peerName string) *User {

@@ -12,7 +12,7 @@ type UserWsCommand interface {
 	/**
 	 * call before Send()
 	 */
-	UpdateRoomState(senderPeer *User)
+	UpdateRoomState(senderPeer *User, msg models.WsMsgJson)
 	Send(senderPeer *User, msg models.WsMsgJson)
 }
 
@@ -21,10 +21,11 @@ func CreatePeerCommandsMap(
 	rooms map[string]*VoiceRoom,
 ) map[models.WsAction]UserWsCommand {
 	return map[models.WsAction]UserWsCommand{
-		models.CONNECT:    &OnUserConnect{voiceRoom, rooms},
-		models.DISCONNECT: &OnUserDisconnect{voiceRoom, rooms},
-		models.ANSWER:     &OnAnswer{voiceRoom, rooms},
-		models.OFFER:      &OnOffer{voiceRoom, rooms},
+		models.CONNECT:          &OnUserConnect{voiceRoom, rooms},
+		models.DISCONNECT:       &OnUserDisconnect{voiceRoom, rooms},
+		models.ANSWER:           &OnAnswer{voiceRoom, rooms},
+		models.OFFER:            &OnOffer{voiceRoom, rooms},
+		models.USER_TOGGLED_MIC: &OnMicrophoneToggle{voiceRoom, rooms},
 	}
 }
 
@@ -55,6 +56,7 @@ func (opc *OnUserConnect) Send(senderUser *User, msg models.WsMsgJson) {
 				Data: models.ConnectionDataToClient{
 					ConnectedUserName: senderUser.name,
 					ConnectedUserId:   senderUser.id,
+					RoomId:            opc.voiceRoom.id,
 				},
 			}
 			err := user.conn.WriteJSON(msg)
@@ -71,11 +73,12 @@ func (opc *OnUserConnect) Send(senderUser *User, msg models.WsMsgJson) {
 		Data: models.ConnectionDataToClient{
 			ConnectedUserName: senderUser.name,
 			ConnectedUserId:   senderUser.id,
+			RoomId:            opc.voiceRoom.id,
 		},
 	}
 }
 
-func (opc *OnUserConnect) UpdateRoomState(senderPeer *User) {
+func (opc *OnUserConnect) UpdateRoomState(senderPeer *User, msg models.WsMsgJson) {
 	opc.voiceRoom.AddUser(senderPeer)
 }
 
@@ -107,13 +110,35 @@ type OnUserDisconnect struct {
 }
 
 func (opd *OnUserDisconnect) Send(senderUser *User, msg models.WsMsgJson) {
-	if len(opd.voiceRoom.users) == 0 {
-		return
+	var hostUser *User = findHost(opd.voiceRoom)
+	var hostName string = "noHost"
+	var hostId string = ""
+	if hostUser != nil {
+		hostLeft := hostUser.id == senderUser.id
+		if hostLeft {
+			if len(opd.voiceRoom.users) > 0 {
+				hostName = opd.voiceRoom.users[0].name
+				hostId = opd.voiceRoom.users[0].id
+			}
+		} else {
+			hostName = hostUser.name
+			hostId = hostUser.id
+		}
 	}
 
-	var hostUser *User = findHost(opd.voiceRoom)
-	if hostUser.id == senderUser.id {
-		hostUser = opd.voiceRoom.users[0]
+	opd.voiceRoom.roomsChan <- models.WsMsgToClientJson{
+		Action: models.USER_LEFT,
+		Data: models.DisconnectionDataToClient{
+			DisconnectedUserId:   senderUser.id,
+			DisconnectedUserName: senderUser.name,
+			RoomId:               opd.voiceRoom.id,
+			NewHostName:          hostName,
+			NewHostId:            hostId,
+		},
+	}
+
+	if len(opd.voiceRoom.users) == 0 {
+		return
 	}
 
 	for _, user := range opd.voiceRoom.users {
@@ -123,8 +148,9 @@ func (opd *OnUserDisconnect) Send(senderUser *User, msg models.WsMsgJson) {
 				Data: models.DisconnectionDataToClient{
 					DisconnectedUserId:   senderUser.id,
 					DisconnectedUserName: senderUser.name,
-					NewHostName:          hostUser.name,
-					NewHostId:            hostUser.id,
+					RoomId:               opd.voiceRoom.id,
+					NewHostName:          hostName,
+					NewHostId:            hostId,
 				},
 			}
 			if user.conn != nil {
@@ -135,19 +161,9 @@ func (opd *OnUserDisconnect) Send(senderUser *User, msg models.WsMsgJson) {
 			}
 		}
 	}
-
-	opd.voiceRoom.roomsChan <- models.WsMsgToClientJson{
-		Action: models.USER_LEFT,
-		Data: models.DisconnectionDataToClient{
-			DisconnectedUserId:   senderUser.id,
-			DisconnectedUserName: senderUser.name,
-			NewHostName:          hostUser.name,
-			NewHostId:            hostUser.id,
-		},
-	}
 }
 
-func (opc *OnUserDisconnect) UpdateRoomState(senderPeer *User) {
+func (opc *OnUserDisconnect) UpdateRoomState(senderPeer *User, msg models.WsMsgJson) {
 	opc.voiceRoom.RemoveUser(senderPeer.id)
 	if len(opc.voiceRoom.users) == 0 {
 		go opc.voiceRoom.SetDeletionTimer(opc.rooms)
@@ -183,7 +199,7 @@ func (opd *OnOffer) Send(senderUser *User, msg models.WsMsgJson) {
 	for _, user := range opd.voiceRoom.users {
 		if user.id == offerMsgData.TargetUserId {
 			msg := models.WsOfferMessageToClient{
-				Action: models.OFFER_CREATED,
+				Action: models.INCOMING_OFFER,
 				Data: models.OfferDataToClient{
 					OfferingUserId:         offerMsgData.OfferingUserId,
 					OfferingUserDescriptor: offerMsgData.OfferingUserDescriptor,
@@ -197,7 +213,7 @@ func (opd *OnOffer) Send(senderUser *User, msg models.WsMsgJson) {
 	}
 }
 
-func (opc *OnOffer) UpdateRoomState(senderPeer *User) {}
+func (opc *OnOffer) UpdateRoomState(senderPeer *User, msg models.WsMsgJson) {}
 
 var _ UserWsCommand = (*OnOffer)(nil)
 
@@ -226,7 +242,7 @@ func (opd *OnAnswer) Send(senderUser *User, msg models.WsMsgJson) {
 	for _, user := range opd.voiceRoom.users {
 		if user.id == answerMsgData.TargetUserId {
 			msg := models.WsAnswerMessageToClient{
-				Action: models.ANSWER_CREATED,
+				Action: models.INCOMING_ANSWER,
 				Data: models.AnswerDataToClient{
 					AnsweringUserId:         answerMsgData.AnsweringUserId,
 					AnsweringUserDescriptor: answerMsgData.AnsweringUserDescriptor,
@@ -240,8 +256,49 @@ func (opd *OnAnswer) Send(senderUser *User, msg models.WsMsgJson) {
 	}
 }
 
-func (opc *OnAnswer) UpdateRoomState(senderPeer *User) {}
+func (opc *OnAnswer) UpdateRoomState(senderPeer *User, msg models.WsMsgJson) {}
 
 var _ UserWsCommand = (*OnAnswer)(nil)
 
 /*-------------------------------------------------------------------------------------------------------- */
+
+type OnMicrophoneToggle struct {
+	voiceRoom *VoiceRoom
+	rooms     map[string]*VoiceRoom
+}
+
+func (opd *OnMicrophoneToggle) Send(senderUser *User, msg models.WsMsgJson) {
+	// unmarshal error already checked in UpdateRoomState()
+	var micToggledData models.MicrophoneToggledDataFromClient
+	utils.UnmarshalOmitEmpty(msg.Data, &micToggledData)
+
+	for _, user := range opd.voiceRoom.users {
+		msg := models.WsMicrophoneToggledMessageToClient{
+			Action: models.USER_TOGGLED_MIC,
+			Data:   micToggledData,
+		}
+		err := user.conn.WriteJSON(msg)
+		if err != nil {
+			log.Println("[OnMicrophoneToggle_Send] err:", err.Error())
+		}
+	}
+}
+
+func (opc *OnMicrophoneToggle) UpdateRoomState(senderUser *User, msg models.WsMsgJson) {
+	var data models.MicrophoneToggledDataFromClient
+	err := utils.UnmarshalOmitEmpty(msg.Data, &data)
+	if err != nil {
+		msg := models.WsErrorMsgToClient{
+			Action: models.ERROR,
+			Data: models.WsErrorMsg{
+				Error: "invalid message",
+			},
+		}
+		senderUser.conn.WriteJSON(msg)
+		log.Println("[OnMicrophoneToggle_UpdateRoomState] invalid message")
+		return
+	}
+	senderUser.muted = !data.MicEnabled
+}
+
+var _ UserWsCommand = (*OnMicrophoneToggle)(nil)

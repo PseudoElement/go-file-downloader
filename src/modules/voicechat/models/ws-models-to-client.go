@@ -14,11 +14,13 @@ type WsErrorMsg struct {
 type ConnectionDataToClient struct {
 	ConnectedUserName string `json:"connected_user_name"`
 	ConnectedUserId   string `json:"connected_user_id"`
+	RoomId            string `json:"room_id"`
 }
 
 type DisconnectionDataToClient struct {
 	DisconnectedUserName string `json:"disconnected_user_name"`
 	DisconnectedUserId   string `json:"disconnected_user_id"`
+	RoomId               string `json:"room_id"`
 	NewHostName          string `json:"new_host_name"`
 	NewHostId            string `json:"new_host_id"`
 }
@@ -62,6 +64,11 @@ type WsOfferMessageToClient struct {
 type WsAnswerMessageToClient struct {
 	Action WsAction           `json:"action"`
 	Data   AnswerDataToClient `json:"data"`
+}
+
+type WsMicrophoneToggledMessageToClient struct {
+	Action WsAction                        `json:"action"`
+	Data   MicrophoneToggledDataFromClient `json:"data"`
 }
 
 /*----------------------------------------------------Global rooms messages-------------------------------------------------------- */

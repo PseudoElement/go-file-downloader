@@ -33,4 +33,9 @@ type AnswerDataFromClient struct {
 	TargetUserId            string `json:"target_user_id"`
 }
 
+type MicrophoneToggledDataFromClient struct {
+	ToggledUserId string `json:"toggled_user_id"`
+	MicEnabled    bool   `json:"mic_enabled"`
+}
+
 /*------------------------------------------------------------------------------------------------------------ */

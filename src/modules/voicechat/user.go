@@ -3,6 +3,7 @@ package voicechat
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
@@ -15,6 +16,7 @@ type User struct {
 	name     string
 	isHost   bool
 	id       string
+	muted    bool
 	commands map[models.WsAction]UserWsCommand
 	conn     *websocket.Conn
 }
@@ -24,6 +26,7 @@ func NewUser(name string, isHost bool, commands map[models.WsAction]UserWsComman
 		name:     name,
 		isHost:   isHost,
 		commands: commands,
+		muted:    false,
 		id:       common.RandomString(),
 	}
 }
@@ -60,14 +63,8 @@ func (u *User) broadcast(ctx context.Context) {
 			err := u.conn.ReadJSON(&wsMsg)
 			log.Printf("[Peer_Broadcast] action: %s, data: %s\n", wsMsg.Action, string(wsMsg.Data))
 			if err != nil {
-				msg := models.WsErrorMsgToClient{
-					Action: models.ERROR,
-					Data:   models.WsErrorMsg{Error: "invalid message"},
-				}
-				err := u.conn.WriteJSON(msg)
-				// if err - it means connection broken and we need to close this connection and remove user
-				if err != nil {
-					log.Printf("[Peer_Broadcast] disconnect failed user %+v\n", u)
+				closeErr := &websocket.CloseError{}
+				if errors.As(err, &closeErr) {
 					u.conn.Close()
 					onUserDisconnect := u.commands[models.DISCONNECT]
 					dataBytes, _ := json.Marshal(models.DisconnectionDataFromClient{
@@ -80,8 +77,14 @@ func (u *User) broadcast(ctx context.Context) {
 						Data:   dataBytes,
 					})
 					return
+				} else {
+					msg := models.WsErrorMsgToClient{
+						Action: models.ERROR,
+						Data:   models.WsErrorMsg{Error: "invalid message"},
+					}
+					u.conn.WriteJSON(msg)
+					continue
 				}
-				continue
 			}
 
 			wsAction := wsMsg.Action
