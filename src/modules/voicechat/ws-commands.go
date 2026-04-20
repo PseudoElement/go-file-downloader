@@ -36,7 +36,7 @@ type OnUserConnect struct {
 	rooms     map[string]*VoiceRoom
 }
 
-func (opc *OnUserConnect) Send(senderUser *User, msg models.WsMsgJson) {
+func (opc *OnUserConnect) Send(senderUser *User, wsMsg models.WsMsgJson) {
 	for _, user := range opc.voiceRoom.users {
 		if user.id == senderUser.id {
 			msg := models.WsConnectionMsgToNewConnectedClient{
@@ -48,7 +48,7 @@ func (opc *OnUserConnect) Send(senderUser *User, msg models.WsMsgJson) {
 			err := user.conn.WriteJSON(msg)
 			if err != nil {
 				log.Println("[OnUserConnect_Send] YOU_CONNECTED err:", err.Error())
-				_disconnectUserOnSendConnectionError(user, opc)
+				_disconnectUserOnSendConnectionError(user, opc, wsMsg)
 			}
 		} else {
 			msg := models.WsConnectionMsgToOtherClient{
@@ -63,7 +63,7 @@ func (opc *OnUserConnect) Send(senderUser *User, msg models.WsMsgJson) {
 			// disconnect failed coonection and send message to sockets
 			if err != nil {
 				log.Println("[OnUserConnect_Send] USER_CONNECTED err:", err.Error())
-				_disconnectUserOnSendConnectionError(user, opc)
+				_disconnectUserOnSendConnectionError(user, opc, wsMsg)
 			}
 		}
 	}
@@ -84,7 +84,7 @@ func (opc *OnUserConnect) UpdateRoomState(senderPeer *User, msg models.WsMsgJson
 
 var _ UserWsCommand = (*OnUserConnect)(nil)
 
-func _disconnectUserOnSendConnectionError(user *User, opc *OnUserConnect) {
+func _disconnectUserOnSendConnectionError(user *User, opc *OnUserConnect, wsMsg models.WsMsgJson) {
 	user.conn.Close()
 	onUserDisconnect := OnUserDisconnect{opc.voiceRoom, opc.rooms}
 	dataBytes, err := json.Marshal(models.DisconnectionDataFromClient{
@@ -99,7 +99,7 @@ func _disconnectUserOnSendConnectionError(user *User, opc *OnUserConnect) {
 		Action: models.DISCONNECT,
 		Data:   dataBytes,
 	})
-	onUserDisconnect.UpdateRoomState(user)
+	onUserDisconnect.UpdateRoomState(user, wsMsg)
 }
 
 /*-------------------------------------------------------------------------------------------------------- */

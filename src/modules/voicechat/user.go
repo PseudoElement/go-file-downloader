@@ -71,7 +71,7 @@ func (u *User) broadcast(ctx context.Context) {
 						DisconnectedUserName: u.name,
 						DisconnectedUserId:   u.id,
 					})
-					onUserDisconnect.UpdateRoomState(u)
+					onUserDisconnect.UpdateRoomState(u, wsMsg)
 					onUserDisconnect.Send(u, models.WsMsgJson{
 						Action: models.DISCONNECT,
 						Data:   dataBytes,
@@ -99,7 +99,7 @@ func (u *User) broadcast(ctx context.Context) {
 				continue
 			}
 
-			command.UpdateRoomState(u)
+			command.UpdateRoomState(u, wsMsg)
 			command.Send(u, wsMsg)
 		}
 	}

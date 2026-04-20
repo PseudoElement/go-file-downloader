@@ -21,6 +21,7 @@ func ApiUserToClientUser(peer *User) models.User {
 		Name:   peer.name,
 		Id:     peer.id,
 		IsHost: peer.isHost,
+		Muted:  peer.muted,
 	}
 }
 
