@@ -286,16 +286,16 @@ func (opd *OnMicrophoneToggle) Send(senderUser *User, msg models.WsMsgJson) {
 
 func (opc *OnMicrophoneToggle) UpdateRoomState(senderUser *User, msg models.WsMsgJson) {
 	var data models.MicrophoneToggledDataFromClient
-	err := utils.UnmarshalOmitEmpty(msg.Data, &data)
+	err := json.Unmarshal(msg.Data, &data)
 	if err != nil {
 		msg := models.WsErrorMsgToClient{
 			Action: models.ERROR,
 			Data: models.WsErrorMsg{
-				Error: "invalid message",
+				Error: "invalid message. " + err.Error(),
 			},
 		}
 		senderUser.conn.WriteJSON(msg)
-		log.Println("[OnMicrophoneToggle_UpdateRoomState] invalid message")
+		log.Println("[OnMicrophoneToggle_UpdateRoomState] invalid message:", err.Error())
 		return
 	}
 	senderUser.muted = !data.MicEnabled

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	seabattle_queries "github.com/pseudoelement/go-file-downloader/src/modules/sea-battle/db"
 	slice_utils_module "github.com/pseudoelement/golang-utils/src/utils/slices"
@@ -18,6 +19,7 @@ func NewSeaBattleService(queries seabattle_queries.SeaBattleQueries) SeaBattleSe
 	srv := SeaBattleService{queries: queries}
 	roomsFromDB := srv.loadExistingRoomsFromDB()
 	srv.rooms = roomsFromDB
+	go srv.checkForEmptyRooms()
 	fmt.Println("ROOMS_FROM_DB ===> ", srv.rooms)
 
 	return srv
@@ -49,6 +51,29 @@ func (this *SeaBattleService) loadExistingRoomsFromDB() []*Room {
 	}
 
 	return rooms
+}
+
+func (this *SeaBattleService) checkForEmptyRooms() {
+	for {
+		<-time.After(1 * time.Minute)
+		for _, room := range this.rooms {
+			createdAt, err := time.Parse("2006-01-02 15:04:05 -0700", room.created_at)
+			log.Printf("[SeaBattleService_checkForEmptyRooms] createdAt: %v, err: %v\n", createdAt, err)
+			if err != nil {
+				continue
+			}
+			diff := time.Duration(time.Since(createdAt).Minutes())
+			// remove empty room after 30 minutes of incativity
+			if len(room.players) == 0 && !room.isPlaying && diff > 30*time.Minute {
+				if err := this.queries.DeleteRoom(room.id); err != nil {
+					this.queries.SaveNewError(room.name, err.Error())
+				}
+				this.rooms = slice_utils_module.Filter(this.rooms, func(r *Room, idx int) bool {
+					return r.id != room.id
+				})
+			}
+		}
+	}
 }
 
 func (this *SeaBattleService) getRoomsList() (RoomsListResp, error) {

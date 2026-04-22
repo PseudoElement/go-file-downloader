@@ -169,7 +169,7 @@ func (eh *EventHandlers) handleDisconnection(email string) error {
 		enemy.MakeAsOwner()
 	}
 
-	if isEmptyRoom := len(eh.room.players) == 0; isEmptyRoom {
+	if len(eh.room.players) == 0 {
 		if err := eh.queries().DeleteRoom(eh.room.id); err != nil {
 			eh.queries().SaveNewError(eh.room.name, err.Error())
 		}
