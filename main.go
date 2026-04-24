@@ -81,7 +81,7 @@ func main() {
 	})
 
 	docs.SwaggerInfo.BasePath = "/api/v1"
-	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+	r.PathPrefix("/api/v1/swagger/").Handler(httpSwagger.WrapHandler)
 
 	handler := c.Handler(r)
 

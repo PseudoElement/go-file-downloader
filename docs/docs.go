@@ -228,6 +228,9 @@ const docTemplate = `{
                 "is_host": {
                     "type": "boolean"
                 },
+                "muted": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 }

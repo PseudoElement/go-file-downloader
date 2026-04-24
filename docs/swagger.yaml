@@ -26,6 +26,8 @@ definitions:
         type: string
       is_host:
         type: boolean
+      muted:
+        type: boolean
       name:
         type: string
     type: object
