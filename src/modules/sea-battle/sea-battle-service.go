@@ -57,6 +57,10 @@ func (this *SeaBattleService) checkForEmptyRooms() {
 	for {
 		<-time.After(1 * time.Minute)
 		for _, room := range this.rooms {
+			//  Jan 2 15:04:05 2006 MST
+			// An easy way to remember this value is that it holds, when presented
+			// in this order, the values (lined up with the elements above):
+			//    1 2  3  4  5    6  -7(mst is UTC-7 timezone)
 			createdAt, err := time.Parse("2006-01-02 15:04:05-07", room.created_at)
 			log.Printf("[SeaBattleService_checkForEmptyRooms] createdAt: %v, err: %v\n", createdAt, err)
 			if err != nil {

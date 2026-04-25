@@ -12,11 +12,12 @@ const (
 
 // inner room events from client
 const (
-	CONNECT          WsAction = "CONNECT"
-	DISCONNECT       WsAction = "DISCONNECT"
-	OFFER            WsAction = "OFFER"
-	ANSWER           WsAction = "ANSWER"
-	USER_TOGGLED_MIC WsAction = "USER_TOGGLED_MIC"
+	CONNECT            WsAction = "CONNECT"
+	DISCONNECT         WsAction = "DISCONNECT"
+	OFFER              WsAction = "OFFER"
+	ANSWER             WsAction = "ANSWER"
+	USER_TOGGLED_MIC   WsAction = "USER_TOGGLED_MIC"
+	USER_VOICE_CHANGED WsAction = "USER_VOICE_CHANGED"
 )
 
 // inner room events to client

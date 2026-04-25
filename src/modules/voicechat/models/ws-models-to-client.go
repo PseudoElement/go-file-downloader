@@ -71,6 +71,11 @@ type WsMicrophoneToggledMessageToClient struct {
 	Data   MicrophoneToggledDataFromClient `json:"data"`
 }
 
+type WsUserVoiceChangedMessageToClient struct {
+	Action WsAction                       `json:"action"`
+	Data   UserVoiceChangedDataFromClient `json:"data"`
+}
+
 /*----------------------------------------------------Global rooms messages-------------------------------------------------------- */
 
 type WsErrorMsgToClient struct {

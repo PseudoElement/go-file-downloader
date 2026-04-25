@@ -38,4 +38,9 @@ type MicrophoneToggledDataFromClient struct {
 	MicEnabled    bool   `json:"mic_enabled"`
 }
 
+type UserVoiceChangedDataFromClient struct {
+	UserId   string `json:"user_id"`
+	Speaking bool   `json:"speaking"`
+}
+
 /*------------------------------------------------------------------------------------------------------------ */
