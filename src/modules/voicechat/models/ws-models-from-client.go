@@ -43,4 +43,10 @@ type UserVoiceChangedDataFromClient struct {
 	Speaking bool   `json:"speaking"`
 }
 
+type UserIceCandidateDataFromClient struct {
+	Candidate    any    `json:"candidate"`
+	SenderUserId string `json:"sender_user_id"`
+	TargetUserId string `json:"target_user_id"`
+}
+
 /*------------------------------------------------------------------------------------------------------------ */

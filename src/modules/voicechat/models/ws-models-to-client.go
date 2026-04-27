@@ -76,6 +76,11 @@ type WsUserVoiceChangedMessageToClient struct {
 	Data   UserVoiceChangedDataFromClient `json:"data"`
 }
 
+type WsUserIceCandidateMessageToClient struct {
+	Action WsAction                       `json:"action"`
+	Data   UserIceCandidateDataFromClient `json:"data"`
+}
+
 /*----------------------------------------------------Global rooms messages-------------------------------------------------------- */
 
 type WsErrorMsgToClient struct {

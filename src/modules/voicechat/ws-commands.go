@@ -21,12 +21,13 @@ func CreatePeerCommandsMap(
 	rooms map[string]*VoiceRoom,
 ) map[models.WsAction]UserWsCommand {
 	return map[models.WsAction]UserWsCommand{
-		models.CONNECT:            &OnUserConnect{voiceRoom, rooms},
-		models.DISCONNECT:         &OnUserDisconnect{voiceRoom, rooms},
-		models.ANSWER:             &OnAnswer{voiceRoom, rooms},
-		models.OFFER:              &OnOffer{voiceRoom, rooms},
-		models.USER_TOGGLED_MIC:   &OnMicrophoneToggle{voiceRoom, rooms},
-		models.USER_VOICE_CHANGED: &OnVoiceChangedToggle{voiceRoom, rooms},
+		models.CONNECT:                 &OnUserConnect{voiceRoom, rooms},
+		models.DISCONNECT:              &OnUserDisconnect{voiceRoom, rooms},
+		models.ANSWER:                  &OnAnswer{voiceRoom, rooms},
+		models.OFFER:                   &OnOffer{voiceRoom, rooms},
+		models.USER_TOGGLED_MIC:        &OnMicrophoneToggle{voiceRoom, rooms},
+		models.USER_VOICE_CHANGED:      &OnVoiceChangedToggle{voiceRoom, rooms},
+		models.ICE_CANDIDATE_TO_SERVER: &OnIceCandidate{voiceRoom, rooms},
 	}
 }
 
@@ -331,3 +332,33 @@ func (cmd *OnVoiceChangedToggle) Send(senderUser *User, msg models.WsMsgJson) {
 func (cmd *OnVoiceChangedToggle) UpdateRoomState(senderUser *User, msg models.WsMsgJson) {}
 
 var _ UserWsCommand = (*OnVoiceChangedToggle)(nil)
+
+/*-------------------------------------------------------------------------------------------------------- */
+
+type OnIceCandidate struct {
+	voiceRoom *VoiceRoom
+	rooms     map[string]*VoiceRoom
+}
+
+func (cmd *OnIceCandidate) Send(senderUser *User, msg models.WsMsgJson) {
+	// unmarshal error already checked in UpdateRoomState()
+	var iceCanidateData models.UserIceCandidateDataFromClient
+	json.Unmarshal(msg.Data, &iceCanidateData)
+
+	for _, user := range cmd.voiceRoom.users {
+		if user.id == iceCanidateData.TargetUserId {
+			msg := models.WsUserIceCandidateMessageToClient{
+				Action: models.ICE_CANDIDATE_FROM_SERVER,
+				Data:   iceCanidateData,
+			}
+			err := user.conn.WriteJSON(msg)
+			if err != nil {
+				log.Println("[OnIceCandidate_Send] err:", err.Error())
+			}
+		}
+	}
+}
+
+func (cmd *OnIceCandidate) UpdateRoomState(senderUser *User, msg models.WsMsgJson) {}
+
+var _ UserWsCommand = (*OnIceCandidate)(nil)
