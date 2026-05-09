@@ -5,18 +5,35 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
 func TimeLoggerCommonMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		now := time.Now()
+		log.Printf("Start request from IP - %s", req.RemoteAddr)
 
 		bytesBody, _ := io.ReadAll(req.Body)
 		req.Body = io.NopCloser(bytes.NewReader(bytesBody))
 
-		log.Printf("Start request from IP - %s", req.RemoteAddr)
-		log.Printf("Body: %s", string(bytesBody))
+		if req.Method == "POST" {
+			log.Printf("Request body: %s", string(bytesBody))
+		}
+		if len(req.URL.RawQuery) > 0 {
+			keyValuePairs := strings.Split(req.URL.RawQuery, "&")
+			if len(keyValuePairs) > 0 {
+				params := make(map[string]string, len(keyValuePairs))
+				for _, keyValue := range keyValuePairs {
+					splitted := strings.Split(keyValue, "=")
+					if len(splitted) < 2 {
+						continue
+					}
+					params[splitted[0]] = splitted[1]
+				}
+				log.Printf("Request params: %v", params)
+			}
+		}
 
 		next.ServeHTTP(w, req)
 
