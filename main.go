@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -41,7 +42,10 @@ func main() {
 		log.Fatalf("err loading: %v", err)
 	}
 
-	api.Use(middlewares.TimeLoggerCommonMW)
+	rateLimiter := middlewares.NewRateLimiter()
+	go rateLimiter.RunCleaner(context.TODO())
+
+	api.Use(middlewares.TimeLoggerCommonMW, rateLimiter.CreateMW)
 
 	logger := logger.New()
 	db := postgres.New()
