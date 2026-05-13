@@ -35,6 +35,7 @@ func (vr *VoiceRoom) SetDeletionTimer(rooms map[string]*VoiceRoom) {
 		return
 	}
 
+	log.Println("[VoiceRoom_SetDeletionTimer] Start timer...")
 	vr.deletionTimerActive = true
 	time.Sleep(1 * time.Minute)
 	if len(vr.users) == 0 {
@@ -46,7 +47,7 @@ func (vr *VoiceRoom) SetDeletionTimer(rooms map[string]*VoiceRoom) {
 			},
 		}
 		delete(rooms, vr.id)
-		log.Println("[ConnectionService_CreateRoom] inactive room deleted. id:", vr.id)
+		log.Println("[VoiceRoom_SetDeletionTimer] inactive room deleted. id:", vr.id)
 	}
 	vr.deletionTimerActive = false
 }
