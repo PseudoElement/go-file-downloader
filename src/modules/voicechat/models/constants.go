@@ -17,6 +17,7 @@ const (
 	OFFER                   WsAction = "OFFER"
 	ANSWER                  WsAction = "ANSWER"
 	USER_TOGGLED_MIC        WsAction = "USER_TOGGLED_MIC"
+	USER_TOGGLED_CAMERA     WsAction = "USER_TOGGLED_CAMERA"
 	USER_VOICE_CHANGED      WsAction = "USER_VOICE_CHANGED"
 	ICE_CANDIDATE_TO_SERVER WsAction = "ICE_CANDIDATE_TO_SERVER"
 )

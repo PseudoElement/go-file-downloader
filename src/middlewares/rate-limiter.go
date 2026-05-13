@@ -99,8 +99,16 @@ func (rl *RateLimiter) RunCleaner(ctx context.Context) {
 
 func (rl *RateLimiter) getReqsAllowance(req *http.Request) (allowedRps int, allowedRpm int) {
 	remoteAddr := req.RemoteAddr
-	pureIP := strings.Split(remoteAddr, ":")[0]
+	var pureIP string
+	if strings.HasPrefix(remoteAddr, "[::1]") {
+		pureIP = "[::1]"
+	} else {
+		pureIP = strings.Split(remoteAddr, ":")[0]
+	}
+
 	premiumClientAllowance, hasPremium := rl.premiumClients[pureIP]
+	log.Println("PURE_IP", pureIP)
+	log.Println("ALLOWANCE", premiumClientAllowance)
 	allowedRps = 3
 	allowedRpm = 100
 	if hasPremium {

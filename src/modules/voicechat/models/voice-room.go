@@ -1,10 +1,11 @@
 package models
 
 type User struct {
-	Name   string `json:"name"`
-	IsHost bool   `json:"is_host"`
-	Id     string `json:"id"`
-	Muted  bool   `json:"muted"`
+	Name          string `json:"name"`
+	IsHost        bool   `json:"is_host"`
+	Id            string `json:"id"`
+	Muted         bool   `json:"muted"`
+	CameraEnabled bool   `json:"camera_enabled"`
 }
 
 type VoiceRoom struct {

@@ -13,21 +13,23 @@ import (
 )
 
 type User struct {
-	name     string
-	isHost   bool
-	id       string
-	muted    bool
-	commands map[models.WsAction]UserWsCommand
-	conn     *websocket.Conn
+	name          string
+	isHost        bool
+	id            string
+	muted         bool
+	cameraEnabled bool
+	commands      map[models.WsAction]UserWsCommand
+	conn          *websocket.Conn
 }
 
 func NewUser(name string, isHost bool, commands map[models.WsAction]UserWsCommand) *User {
 	return &User{
-		name:     name,
-		isHost:   isHost,
-		commands: commands,
-		muted:    false,
-		id:       common.RandomString(),
+		name:          name,
+		isHost:        isHost,
+		commands:      commands,
+		muted:         false,
+		cameraEnabled: false,
+		id:            common.RandomString(),
 	}
 }
 

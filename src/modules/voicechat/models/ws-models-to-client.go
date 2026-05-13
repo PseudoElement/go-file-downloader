@@ -14,6 +14,7 @@ type WsErrorMsg struct {
 type ConnectionDataToClient struct {
 	ConnectedUserName string `json:"connected_user_name"`
 	ConnectedUserId   string `json:"connected_user_id"`
+	CameraEnabled     bool   `json:"camera_enabled"`
 	RoomId            string `json:"room_id"`
 }
 
@@ -79,6 +80,11 @@ type WsUserVoiceChangedMessageToClient struct {
 type WsUserIceCandidateMessageToClient struct {
 	Action WsAction                       `json:"action"`
 	Data   UserIceCandidateDataFromClient `json:"data"`
+}
+
+type WsUserCameraToggledMessageToClient struct {
+	Action WsAction                    `json:"action"`
+	Data   CameraToggledDataFromClient `json:"data"`
 }
 
 /*----------------------------------------------------Global rooms messages-------------------------------------------------------- */

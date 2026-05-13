@@ -28,6 +28,7 @@ func CreatePeerCommandsMap(
 		models.USER_TOGGLED_MIC:        &OnMicrophoneToggle{voiceRoom, rooms},
 		models.USER_VOICE_CHANGED:      &OnVoiceChangedToggle{voiceRoom, rooms},
 		models.ICE_CANDIDATE_TO_SERVER: &OnIceCandidate{voiceRoom, rooms},
+		models.USER_TOGGLED_CAMERA:     &OnCameraToggle{voiceRoom, rooms},
 	}
 }
 
@@ -58,6 +59,7 @@ func (cmd *OnUserConnect) Send(senderUser *User, wsMsg models.WsMsgJson) {
 				Data: models.ConnectionDataToClient{
 					ConnectedUserName: senderUser.name,
 					ConnectedUserId:   senderUser.id,
+					CameraEnabled:     senderUser.cameraEnabled,
 					RoomId:            cmd.voiceRoom.id,
 				},
 			}
@@ -75,13 +77,28 @@ func (cmd *OnUserConnect) Send(senderUser *User, wsMsg models.WsMsgJson) {
 		Data: models.ConnectionDataToClient{
 			ConnectedUserName: senderUser.name,
 			ConnectedUserId:   senderUser.id,
+			CameraEnabled:     senderUser.cameraEnabled,
 			RoomId:            cmd.voiceRoom.id,
 		},
 	}
 }
 
-func (cmd *OnUserConnect) UpdateRoomState(senderPeer *User, msg models.WsMsgJson) {
-	cmd.voiceRoom.AddUser(senderPeer)
+func (cmd *OnUserConnect) UpdateRoomState(senderUser *User, msg models.WsMsgJson) {
+	var data models.ConnectionDataFromClient
+	err := json.Unmarshal(msg.Data, &data)
+	if err != nil {
+		msg := models.WsErrorMsgToClient{
+			Action: models.ERROR,
+			Data: models.WsErrorMsg{
+				Error: "invalid message. " + err.Error(),
+			},
+		}
+		senderUser.conn.WriteJSON(msg)
+		log.Println("[OnUserConnect_UpdateRoomState] invalid message:", err.Error())
+		return
+	}
+	senderUser.cameraEnabled = data.CameraEnabled
+	cmd.voiceRoom.AddUser(senderUser)
 }
 
 var _ UserWsCommand = (*OnUserConnect)(nil)
@@ -362,3 +379,46 @@ func (cmd *OnIceCandidate) Send(senderUser *User, msg models.WsMsgJson) {
 func (cmd *OnIceCandidate) UpdateRoomState(senderUser *User, msg models.WsMsgJson) {}
 
 var _ UserWsCommand = (*OnIceCandidate)(nil)
+
+/*-------------------------------------------------------------------------------------------------------- */
+
+type OnCameraToggle struct {
+	voiceRoom *VoiceRoom
+	rooms     map[string]*VoiceRoom
+}
+
+func (cmd *OnCameraToggle) Send(senderUser *User, msg models.WsMsgJson) {
+	// unmarshal error already checked in UpdateRoomState()
+	var cameraToggledData models.CameraToggledDataFromClient
+	json.Unmarshal(msg.Data, &cameraToggledData)
+
+	for _, user := range cmd.voiceRoom.users {
+		msg := models.WsUserCameraToggledMessageToClient{
+			Action: models.USER_TOGGLED_CAMERA,
+			Data:   cameraToggledData,
+		}
+		err := user.conn.WriteJSON(msg)
+		if err != nil {
+			log.Println("[OnCameraToggle_Send] err:", err.Error())
+		}
+	}
+}
+
+func (cmd *OnCameraToggle) UpdateRoomState(senderUser *User, msg models.WsMsgJson) {
+	var data models.CameraToggledDataFromClient
+	err := json.Unmarshal(msg.Data, &data)
+	if err != nil {
+		msg := models.WsErrorMsgToClient{
+			Action: models.ERROR,
+			Data: models.WsErrorMsg{
+				Error: "invalid message. " + err.Error(),
+			},
+		}
+		senderUser.conn.WriteJSON(msg)
+		log.Println("[OnCameraToggle_UpdateRoomState] invalid message:", err.Error())
+		return
+	}
+	senderUser.cameraEnabled = data.CameraEnabled
+}
+
+var _ UserWsCommand = (*OnCameraToggle)(nil)

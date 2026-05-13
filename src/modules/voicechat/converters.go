@@ -18,10 +18,11 @@ func ApiRoomToClientRoom(room *VoiceRoom) models.VoiceRoom {
 
 func ApiUserToClientUser(peer *User) models.User {
 	return models.User{
-		Name:   peer.name,
-		Id:     peer.id,
-		IsHost: peer.isHost,
-		Muted:  peer.muted,
+		Name:          peer.name,
+		Id:            peer.id,
+		IsHost:        peer.isHost,
+		Muted:         peer.muted,
+		CameraEnabled: peer.cameraEnabled,
 	}
 }
 

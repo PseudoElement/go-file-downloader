@@ -14,6 +14,7 @@ type WsMsgJson struct {
 type ConnectionDataFromClient struct {
 	ConnectedUserName string `json:"connected_user_name"`
 	RoomId            string `json:"room_id"`
+	CameraEnabled     bool   `json:"camera_enabled"`
 }
 
 type DisconnectionDataFromClient struct {
@@ -47,6 +48,11 @@ type UserIceCandidateDataFromClient struct {
 	Candidate    any    `json:"candidate"`
 	SenderUserId string `json:"sender_user_id"`
 	TargetUserId string `json:"target_user_id"`
+}
+
+type CameraToggledDataFromClient struct {
+	ToggledUserId string `json:"toggled_user_id"`
+	CameraEnabled bool   `json:"camera_enabled"`
 }
 
 /*------------------------------------------------------------------------------------------------------------ */
