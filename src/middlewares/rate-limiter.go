@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/pseudoelement/go-file-downloader/src/utils/common"
@@ -36,8 +35,7 @@ func NewRateLimiter() *RateLimiter {
  */
 func (rl *RateLimiter) CreateMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		remoteAddr := req.RemoteAddr
-		clientIP := strings.Split(remoteAddr, ":")[0]
+		clientIP := common.GetClientIP(req, true)
 		clientActivity, ok := rl.clientsActivity[clientIP]
 		if ok {
 			now := time.Now().UnixMilli()
@@ -99,7 +97,7 @@ func (rl *RateLimiter) RunCleaner(ctx context.Context) {
 }
 
 func (rl *RateLimiter) getReqsAllowance(req *http.Request) (allowedRps int, allowedRpm int) {
-	ipAddr := common.GetClientIP(req, true)
+	ipAddr := common.GetClientIP(req, false)
 	allowedRps = 3
 	allowedRpm = 100
 	premiumClientAllowance, hasPremium := rl.premiumClients[ipAddr]
