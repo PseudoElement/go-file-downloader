@@ -3,6 +3,7 @@ package middlewares
 import (
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -98,22 +99,31 @@ func (rl *RateLimiter) RunCleaner(ctx context.Context) {
 }
 
 func (rl *RateLimiter) getReqsAllowance(req *http.Request) (allowedRps int, allowedRpm int) {
-	remoteAddr := req.RemoteAddr
-	var pureIP string
-	if strings.HasPrefix(remoteAddr, "[::1]") {
-		pureIP = "[::1]"
-	} else {
-		pureIP = strings.Split(remoteAddr, ":")[0]
-	}
-
-	premiumClientAllowance, hasPremium := rl.premiumClients[pureIP]
-	log.Println("PURE_IP", pureIP)
-	log.Println("ALLOWANCE", premiumClientAllowance)
+	ipAddr := rl.getClientIP(req)
 	allowedRps = 3
 	allowedRpm = 100
+	premiumClientAllowance, hasPremium := rl.premiumClients[ipAddr]
 	if hasPremium {
 		allowedRps = premiumClientAllowance.allowedRps
 		allowedRpm = premiumClientAllowance.allowedRpm
 	}
 	return allowedRps, allowedRpm
+}
+
+func (rl *RateLimiter) getClientIP(req *http.Request) string {
+	if xff := req.Header.Get("X-Forwarded-For"); xff != "" {
+		log.Println("X-Forwarded-For:", xff)
+		ips := strings.Split(xff, ",")
+		return strings.TrimSpace(ips[0])
+	}
+	if xri := req.Header.Get("X-Real-Ip"); xri != "" {
+		log.Println("X-Real-Ip:", xri)
+		return xri
+	}
+
+	host, _, err := net.SplitHostPort(req.RemoteAddr)
+	if err != nil {
+		return req.RemoteAddr
+	}
+	return host
 }
