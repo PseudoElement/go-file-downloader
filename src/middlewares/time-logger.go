@@ -7,12 +7,15 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/pseudoelement/go-file-downloader/src/utils/common"
 )
 
 func TimeLoggerCommonMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		now := time.Now()
-		log.Printf("Start request from IP - %s", req.RemoteAddr)
+		ipAddr := common.GetClientIP(req, false)
+		log.Printf("Start request from IP - %s", ipAddr)
 
 		bytesBody, _ := io.ReadAll(req.Body)
 		req.Body = io.NopCloser(bytes.NewReader(bytesBody))

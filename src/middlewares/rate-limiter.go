@@ -3,11 +3,11 @@ package middlewares
 import (
 	"context"
 	"log"
-	"net"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/pseudoelement/go-file-downloader/src/utils/common"
 	api_module "github.com/pseudoelement/golang-utils/src/api"
 )
 
@@ -99,7 +99,7 @@ func (rl *RateLimiter) RunCleaner(ctx context.Context) {
 }
 
 func (rl *RateLimiter) getReqsAllowance(req *http.Request) (allowedRps int, allowedRpm int) {
-	ipAddr := rl.getClientIP(req)
+	ipAddr := common.GetClientIP(req, true)
 	allowedRps = 3
 	allowedRpm = 100
 	premiumClientAllowance, hasPremium := rl.premiumClients[ipAddr]
@@ -108,25 +108,4 @@ func (rl *RateLimiter) getReqsAllowance(req *http.Request) (allowedRps int, allo
 		allowedRpm = premiumClientAllowance.allowedRpm
 	}
 	return allowedRps, allowedRpm
-}
-
-func (rl *RateLimiter) getClientIP(req *http.Request) string {
-	xff := req.Header.Get("X-Forwarded-For")
-	xri := req.Header.Get("X-Real-Ip")
-	log.Println("X-Forwarded-For:", xff)
-	log.Println("X-Real-Ip:", xri)
-
-	if xff != "" {
-		ips := strings.Split(xff, ",")
-		return strings.TrimSpace(ips[0])
-	}
-	if xri != "" {
-		return xri
-	}
-
-	host, _, err := net.SplitHostPort(req.RemoteAddr)
-	if err != nil {
-		return req.RemoteAddr
-	}
-	return host
 }
