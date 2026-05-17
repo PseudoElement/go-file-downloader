@@ -1,6 +1,9 @@
 async function apiReq() {
-  return fetch("http://davidovich.online/api/v1/health/test-json", {
+  return fetch("http://localhost:8081/api/v1/health/test-json", {
     method: "GET",
+    headers: {
+      Origin: "https://davidovich.online",
+    },
     // body: JSON.stringify({
     //   room_name: "room_258",
     //   nickname: "pablus",
@@ -17,7 +20,7 @@ function callTimesN(n) {
 
 (async () => {
   while (true) {
-    callTimesN(10);
+    callTimesN(20);
     await new Promise((res) => setTimeout(res, 2_000));
   }
 })();

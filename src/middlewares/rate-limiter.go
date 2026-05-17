@@ -109,12 +109,12 @@ func (rl *RateLimiter) getReqsAllowance(req *http.Request) (allowedRps int, allo
 		allowedRpm = premiumClientAllowance.allowedRpm
 	}
 
-	origin := req.Header.Get("Origin")
 	// for browser requests same as origin but has / in the end
-	referer := req.Header.Get("Origin")
+	referer := req.Header.Get("Referer")
+	origin := req.Header.Get("Origin")
 	for _, allowedOrigin := range rl.allowedOrigins {
 		if strings.Contains(origin, allowedOrigin) && strings.Contains(referer, allowedOrigin) {
-			allowedRps, allowedRpm = 10, 600
+			allowedRps, allowedRpm = 10, 500
 		}
 	}
 
