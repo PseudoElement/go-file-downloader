@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/pseudoelement/go-file-downloader/src/utils/common"
@@ -18,13 +19,16 @@ type PremiumClient struct {
 type RateLimiter struct {
 	clientsActivity map[string][]int64
 	premiumClients  map[string]PremiumClient
+	allowedOrigins  []string
 }
 
-func NewRateLimiter() *RateLimiter {
+func NewRateLimiter(allowedOrigins []string) *RateLimiter {
 	return &RateLimiter{
+		allowedOrigins:  allowedOrigins,
 		clientsActivity: make(map[string][]int64),
 		premiumClients: map[string]PremiumClient{
-			"[::1]":        {allowedRps: 10, allowedRpm: 600},
+			"[::1]": {allowedRps: 10, allowedRpm: 600},
+			// doesn't work for clients, cause every client has own IP, not an IP of server, where client app deployed
 			"82.146.32.19": {allowedRps: 10, allowedRpm: 600},
 		},
 	}
@@ -98,12 +102,21 @@ func (rl *RateLimiter) RunCleaner(ctx context.Context) {
 
 func (rl *RateLimiter) getReqsAllowance(req *http.Request) (allowedRps int, allowedRpm int) {
 	ipAddr := common.GetClientIP(req, false)
-	allowedRps = 3
-	allowedRpm = 100
+	allowedRps, allowedRpm = 3, 100
 	premiumClientAllowance, hasPremium := rl.premiumClients[ipAddr]
 	if hasPremium {
 		allowedRps = premiumClientAllowance.allowedRps
 		allowedRpm = premiumClientAllowance.allowedRpm
 	}
+
+	origin := req.Header.Get("Origin")
+	// for browser requests same as origin but has / in the end
+	referer := req.Header.Get("Origin")
+	for _, allowedOrigin := range rl.allowedOrigins {
+		if strings.Contains(origin, allowedOrigin) && strings.Contains(referer, allowedOrigin) {
+			allowedRps, allowedRpm = 10, 600
+		}
+	}
+
 	return allowedRps, allowedRpm
 }

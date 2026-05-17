@@ -41,8 +41,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("err loading: %v", err)
 	}
+	allowedOrigins := getAllowedOrigins()
 
-	rateLimiter := middlewares.NewRateLimiter()
+	rateLimiter := middlewares.NewRateLimiter(allowedOrigins)
 	go rateLimiter.RunCleaner(context.TODO())
 
 	api.Use(middlewares.TimeLoggerCommonMW, rateLimiter.CreateMW)
@@ -65,7 +66,7 @@ func main() {
 	voicechatModule.SetRoutes()
 
 	c := cors.New(cors.Options{
-		AllowedOrigins:     getAllowedOrigins(),
+		AllowedOrigins:     allowedOrigins,
 		AllowedMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:     []string{"Content-Type", "Bearer", "Accept", "Authorization"},
 		OptionsPassthrough: true,
@@ -75,7 +76,7 @@ func main() {
 		// },
 		AllowCredentials: true,
 		MaxAge:           10,
-		Debug:            true,
+		Debug:            false,
 	})
 	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

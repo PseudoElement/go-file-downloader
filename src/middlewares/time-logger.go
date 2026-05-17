@@ -15,7 +15,7 @@ func TimeLoggerCommonMW(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		now := time.Now()
 		ipAddr := common.GetClientIP(req, false)
-		log.Printf("Start request from IP - %s", ipAddr)
+		log.Printf("Start request %s from IP - %s", req.URL.String(), ipAddr)
 
 		bytesBody, _ := io.ReadAll(req.Body)
 		req.Body = io.NopCloser(bytes.NewReader(bytesBody))

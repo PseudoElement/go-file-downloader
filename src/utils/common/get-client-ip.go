@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+/**
+ * for WebSocket connection ip is empty string "" every time, need to check ip from conn.RemoteAddr().String()
+ */
 func GetClientIP(req *http.Request, withLogs bool) string {
 	xff := req.Header.Get("X-Forwarded-For")
 	xri := req.Header.Get("X-Real-Ip")
