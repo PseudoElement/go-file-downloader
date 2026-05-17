@@ -111,13 +111,16 @@ func (rl *RateLimiter) getReqsAllowance(req *http.Request) (allowedRps int, allo
 }
 
 func (rl *RateLimiter) getClientIP(req *http.Request) string {
-	if xff := req.Header.Get("X-Forwarded-For"); xff != "" {
-		log.Println("X-Forwarded-For:", xff)
+	xff := req.Header.Get("X-Forwarded-For")
+	xri := req.Header.Get("X-Real-Ip")
+	log.Println("X-Forwarded-For:", xff)
+	log.Println("X-Real-Ip:", xri)
+
+	if xff != "" {
 		ips := strings.Split(xff, ",")
 		return strings.TrimSpace(ips[0])
 	}
-	if xri := req.Header.Get("X-Real-Ip"); xri != "" {
-		log.Println("X-Real-Ip:", xri)
+	if xri != "" {
 		return xri
 	}
 
