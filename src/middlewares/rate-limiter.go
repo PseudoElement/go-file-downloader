@@ -72,7 +72,7 @@ func (rl *RateLimiter) CreateMW(next http.Handler) http.Handler {
 				allowedRph,
 			)
 			// prevents memore overflow of spammers, clientActivity could be with billions of items
-			if rphCount < allowedRph {
+			if rphCount <= allowedRph {
 				clientActivity = append(clientActivity, now)
 				rl.clientsActivity[clientIP] = clientActivity
 			}
