@@ -14,13 +14,13 @@ async function apiReq() {
     .catch((err) => console.log("ERROR:", err));
 }
 
-function callTimesN(n) {
-  for (let i = 0; i < n; i++) apiReq();
+async function callTimesN(n) {
+  for (let i = 0; i < n; i++) await apiReq();
 }
 
 (async () => {
   while (true) {
-    callTimesN(20);
+    callTimesN(10);
     await new Promise((res) => setTimeout(res, 2_000));
   }
 })();
