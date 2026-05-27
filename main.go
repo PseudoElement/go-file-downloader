@@ -42,7 +42,6 @@ func main() {
 		log.Fatalf("err loading: %v", err)
 	}
 	allowedOrigins := getAllowedOrigins()
-
 	rateLimiter := middlewares.NewRateLimiter(allowedOrigins)
 	go rateLimiter.RunCleaner(context.TODO())
 

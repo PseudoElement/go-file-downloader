@@ -1,5 +1,5 @@
 async function apiReq() {
-  return fetch("https://davidovich.online/api/v1/health/test-json", {
+  return fetch("http://localhost:8081/api/v1/health/test-json", {
     method: "GET",
     headers: {
       Origin: "https://davidovich.online",
@@ -20,7 +20,7 @@ async function callTimesN(n) {
 
 (async () => {
   while (true) {
-    callTimesN(1_000);
+    callTimesN(10);
     await new Promise((res) => setTimeout(res, 2_000));
   }
 })();
