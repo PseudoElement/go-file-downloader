@@ -7,11 +7,15 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
-	github.com/pseudoelement/golang-utils v0.0.0-20260513195441-77463071b70d
+	// github.com/pseudoelement/golang-utils v0.0.0-20260513195441-77463071b70d
 	github.com/rs/cors v1.11.1
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.6
 )
+
+// require github.com/pseudoelement/golang-utils v0.0.0-00010101000000-000000000000
+
+require github.com/pseudoelement/golang-utils v0.0.0-20260513195441-77463071b70d
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -29,6 +33,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-// replace (
-// 	github.com/pseudoelement/golang-utils => ../golang-utils
-// )
+// replace github.com/pseudoelement/golang-utils => ../golang-utils

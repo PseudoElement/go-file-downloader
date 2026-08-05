@@ -36,7 +36,7 @@ func (srv *DownloaderService) CreateTempFileWithContent(body interface{}, conten
 	return file, nil
 }
 
-func (srv *DownloaderService) ValidateColumnParams(body interface{}) errors_module.ErrorWithStatus {
+func (srv *DownloaderService) ValidateColumnParams(body any) errors_module.ErrorWithStatus {
 	v := reflect.ValueOf(body)
 
 	// Check if the passed body is a pointer and get the element it points to
