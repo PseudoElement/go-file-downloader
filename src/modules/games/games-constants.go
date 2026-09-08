@@ -7,4 +7,7 @@ var GAME_IDS = map[string]string{
 	"snake-macos":       "snake-mac.zip",
 	"snake-windows":     "snake-win64.exe.zip",
 	"snake-linux":       "snake-linux.zip",
+	"galaga-macos":      "galaga-mac.zip",
+	"galaga-windows":    "galaga-win64.zip",
+	"galaga-linux":      "galaga-linux.zip",
 }
